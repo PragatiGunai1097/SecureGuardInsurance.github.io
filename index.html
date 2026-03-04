@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="InsuranceProject">
+    <title>New Frame</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['var(--font-heading-name)', 'serif'],
+            body: ['var(--font-body-name)', 'sans-serif'],
+          },
+          borderRadius: { small: 'var(--radius-small)', large: 'var(--radius-large)' },
+          boxShadow: {
+            custom: 'var(--shadow-custom)',
+            'custom-hover': 'var(--shadow-custom-hover)',
+          }
+        }
+      }
+    }
+  
+    </script>
+    <link rel="stylesheet" href="styles.css">
+    <meta name="theme-color" content="#007bff">
+    <meta name="color-scheme" content="light dark">
+    <meta name="author" content="InsuranceProject">
+</head>
+<body>
+    
+
+<!-- Toast -->
+<div id="toast" class="toast"><span id="toast-icon" class="text-lg"></span><span id="toast-msg"></span></div>
+
+<!-- Cart Overlay -->
+<div id="cart-overlay" class="cart-overlay" onclick="closeCart()"></div>
+
+<!-- ═══════════════ CART DRAWER ═══════════════ -->
+<div id="cart-drawer" class="cart-drawer flex flex-col">
+  <div class="flex items-center justify-between p-5 border-b border-gray-100" style="background:linear-gradient(135deg,#0f172a,#1235e1);">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🛒</span>
+      <div><h3 class="font-heading text-lg font-bold text-white">Your Cart</h3><p id="cart-count-label" class="text-blue-200 text-xs">0 items</p></div>
+    </div>
+    <button onclick="closeCart()" class="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-small flex items-center justify-center text-white transition-all">✕</button>
+  </div>
+  <div id="promo-applied-bar" class="hidden bg-green-50 border-b border-green-200 px-5 py-2.5 flex items-center justify-between">
+    <div class="flex items-center gap-2 text-green-700 text-sm font-bold"><span>🎉</span><span id="promo-applied-text"></span></div>
+    <button onclick="removePromo()" class="text-green-600 hover:text-red-500 text-xs font-bold">Remove</button>
+  </div>
+  <div id="cart-items-container" class="flex-1 overflow-y-auto p-4 space-y-3">
+    <div id="cart-empty" class="flex flex-col items-center justify-center py-14 text-center">
+      <div class="text-5xl mb-3">🛒</div>
+      <h4 class="font-heading text-base font-bold text-gray-700 mb-1">Cart is empty</h4>
+      <p class="text-gray-400 text-sm mb-5">Browse plans and add them here</p>
+      <button onclick="closeCart()" class="shimmer-btn text-white px-5 py-2 rounded-small font-bold text-sm">Browse Plans</button>
+    </div>
+    <div id="cart-items-list" class="space-y-3 hidden"></div>
+  </div>
+  <div id="cart-promo-section" class="hidden px-4 py-3 border-t border-gray-100 bg-gray-50">
+    <div class="flex gap-2">
+      <input id="promo-input" type="text" placeholder="Promo code (e.g. BUNDLE20)" class="input-animated flex-1 rounded-small px-3 py-2 text-sm outline-none bg-white uppercase">
+      <button onclick="applyPromo()" class="shimmer-btn-blue text-white px-4 py-2 rounded-small font-bold text-sm">Apply</button>
+    </div>
+    <p id="promo-err" class="text-red-500 text-xs mt-1 hidden">Invalid or ineligible code.</p>
+  </div>
+  <div id="cart-summary" class="hidden border-t border-gray-200 p-4 bg-white">
+    <div class="space-y-1.5 mb-4 text-sm">
+      <div class="flex justify-between text-gray-600"><span>Subtotal/mo</span><span id="cart-subtotal" class="font-medium text-gray-800">$0</span></div>
+      <div id="discount-row" class="hidden flex justify-between text-green-600 font-medium"><span id="discount-label">Discount</span><span id="cart-discount">-$0</span></div>
+      <div class="border-t border-gray-200 pt-2 flex justify-between font-bold text-gray-900"><span>Total/mo</span><span id="cart-total" class="text-blue-700 text-lg">$0</span></div>
+    </div>
+    <button onclick="openCheckout()" class="w-full shimmer-btn text-white py-3 rounded-small font-bold hover:scale-105 transform transition-all shadow-custom mb-2">🔒 Secure Checkout →</button>
+    <button onclick="closeCart()" class="w-full border-2 border-gray-200 text-gray-600 py-2 rounded-small font-medium hover:bg-gray-50 transition-all text-sm">Continue Shopping</button>
+  </div>
+</div>
+
+<!-- ═══════════════ CHECKOUT MODAL ═══════════════ -->
+<div id="checkout-modal" class="modal-overlay" onclick="if(event.target===this)closeModal('checkout-modal')">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:620px;padding:0;overflow:hidden;">
+    <div class="p-5 border-b" style="background:linear-gradient(135deg,#0f172a,#1235e1);">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3"><span class="text-xl">🔒</span><div><h3 class="font-heading text-lg font-bold text-white">Secure Checkout</h3><p class="text-blue-200 text-xs">256-bit SSL encrypted</p></div></div>
+        <button onclick="closeModal('checkout-modal')" class="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white">✕</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <div id="pi-1" class="pay-step-ind active">1</div><div class="flex-1 h-0.5 bg-white/20"></div>
+        <div id="pi-2" class="pay-step-ind">2</div><div class="flex-1 h-0.5 bg-white/20"></div>
+        <div id="pi-3" class="pay-step-ind">3</div><div class="flex-1 h-0.5 bg-white/20"></div>
+        <div id="pi-4" class="pay-step-ind">4</div>
+        <span id="pay-step-lbl" class="ml-2 text-blue-200 text-xs">Review</span>
+      </div>
+    </div>
+    <div class="p-5 overflow-y-auto" style="max-height:62vh;">
+      <!-- Step 1 -->
+      <div id="ps-1" class="payment-step active">
+        <h4 class="font-heading font-bold text-gray-900 text-base mb-4">Order Summary</h4>
+        <div id="co-items" class="space-y-2 mb-5"></div>
+        <div class="bg-blue-50 rounded-large p-4 mb-5 border border-blue-100 text-sm space-y-1.5">
+          <div class="flex justify-between text-gray-600"><span>Subtotal/mo</span><span id="co-sub" class="font-medium text-gray-800">$0</span></div>
+          <div id="co-disc-row" class="hidden flex justify-between text-green-600 font-medium"><span id="co-disc-lbl">Discount</span><span id="co-disc">-$0</span></div>
+          <div class="border-t border-blue-200 pt-2 flex justify-between font-bold text-gray-900"><span>Total/mo</span><span id="co-total" class="text-blue-700">$0</span></div>
+        </div>
+        <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-small p-3 mb-5"><span class="text-green-600">🛡️</span><p class="text-green-700 text-xs font-medium">30-day money-back guarantee. Cancel anytime.</p></div>
+        <button onclick="payGo(2)" class="w-full shimmer-btn text-white py-3 rounded-small font-bold hover:scale-105 transform transition-all shadow-custom">Continue to Personal Info →</button>
+      </div>
+      <!-- Step 2 -->
+      <div id="ps-2" class="payment-step">
+        <h4 class="font-heading font-bold text-gray-900 text-base mb-4">Personal Information</h4>
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">First Name *</label><input id="pf-fname" type="text" placeholder="John" class="input-animated w-full rounded-small p-2.5 bg-white text-sm"><p id="pf-fname-e" class="text-red-500 text-xs mt-0.5 hidden">Required.</p></div>
+            <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Last Name *</label><input id="pf-lname" type="text" placeholder="Doe" class="input-animated w-full rounded-small p-2.5 bg-white text-sm"><p id="pf-lname-e" class="text-red-500 text-xs mt-0.5 hidden">Required.</p></div>
+          </div>
+          <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Email *</label><input id="pf-email" type="email" placeholder="john@example.com" class="input-animated w-full rounded-small p-2.5 bg-white text-sm"><p id="pf-email-e" class="text-red-500 text-xs mt-0.5 hidden">Invalid email.</p></div>
+          <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Phone *</label><input id="pf-phone" type="tel" placeholder="+1 (555) 000-0000" class="input-animated w-full rounded-small p-2.5 bg-white text-sm"><p id="pf-phone-e" class="text-red-500 text-xs mt-0.5 hidden">Invalid phone.</p></div>
+          <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Date of Birth *</label><input id="pf-dob" type="date" class="input-animated w-full rounded-small p-2.5 bg-white text-sm"><p id="pf-dob-e" class="text-red-500 text-xs mt-0.5 hidden">Required.</p></div>
+          <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Address *</label><input id="pf-addr" type="text" placeholder="123 Main St, New York, NY" class="input-animated w-full rounded-small p-2.5 bg-white text-sm"><p id="pf-addr-e" class="text-red-500 text-xs mt-0.5 hidden">Required.</p></div>
+        </div>
+        <div class="flex gap-3 mt-5"><button onclick="payGo(1)" class="flex-1 border-2 border-gray-200 text-gray-600 py-2.5 rounded-small font-bold hover:bg-gray-50 text-sm">← Back</button><button onclick="payStep2Next()" class="flex-1 shimmer-btn text-white py-2.5 rounded-small font-bold hover:scale-105 transform transition-all text-sm">Continue →</button></div>
+      </div>
+      <!-- Step 3 -->
+      <div id="ps-3" class="payment-step">
+        <h4 class="font-heading font-bold text-gray-900 text-base mb-1">Payment Details</h4>
+        <p class="text-gray-500 text-xs mb-4">Encrypted &amp; secure.</p>
+        <div class="flex gap-1.5 mb-4 bg-gray-100 p-1 rounded-small">
+          <button id="tab-card" onclick="switchTab('card')" class="flex-1 py-2 rounded-small text-xs font-bold bg-white text-blue-700 shadow-sm transition-all">💳 Card</button>
+          <button id="tab-paypal" onclick="switchTab('paypal')" class="flex-1 py-2 rounded-small text-xs font-bold text-gray-500 hover:text-gray-700 transition-all">🅿️ PayPal</button>
+          <button id="tab-bank" onclick="switchTab('bank')" class="flex-1 py-2 rounded-small text-xs font-bold text-gray-500 hover:text-gray-700 transition-all">🏦 Bank</button>
+        </div>
+        <div id="pt-card" class="space-y-3">
+          <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Cardholder Name *</label><input id="pc-name" type="text" placeholder="John Doe" class="input-animated w-full rounded-small p-2.5 bg-white text-sm"><p id="pc-name-e" class="text-red-500 text-xs mt-0.5 hidden">Required.</p></div>
+          <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Card Number *</label><div class="card-input-wrap"><input id="pc-num" type="text" placeholder="1234 5678 9012 3456" maxlength="19" class="input-animated w-full rounded-small p-2.5 pr-10 bg-white text-sm font-mono" oninput="fmtCard(this)"><span id="ctype" class="card-type-icon">💳</span></div><p id="pc-num-e" class="text-red-500 text-xs mt-0.5 hidden">Invalid card number.</p></div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Expiry *</label><input id="pc-exp" type="text" placeholder="MM/YY" maxlength="5" class="input-animated w-full rounded-small p-2.5 bg-white text-sm font-mono" oninput="fmtExp(this)"><p id="pc-exp-e" class="text-red-500 text-xs mt-0.5 hidden">Invalid.</p></div>
+            <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">CVV *</label><div class="relative"><input id="pc-cvv" type="password" placeholder="•••" maxlength="4" class="input-animated w-full rounded-small p-2.5 pr-8 bg-white text-sm font-mono"><button type="button" onclick="toggleCVV()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">👁</button></div><p id="pc-cvv-e" class="text-red-500 text-xs mt-0.5 hidden">Invalid.</p></div>
+          </div>
+        </div>
+        <div id="pt-paypal" class="hidden text-center py-6"><div class="text-4xl mb-3">🅿️</div><p class="text-gray-600 text-sm">You'll be redirected to PayPal to complete payment.</p></div>
+        <div id="pt-bank" class="hidden space-y-3">
+          <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Account Holder *</label><input id="pb-name" type="text" placeholder="John Doe" class="input-animated w-full rounded-small p-2.5 bg-white text-sm"></div>
+          <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Routing Number *</label><input id="pb-route" type="text" placeholder="021000021" maxlength="9" class="input-animated w-full rounded-small p-2.5 bg-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Account Number *</label><input id="pb-acct" type="text" placeholder="000123456789" maxlength="17" class="input-animated w-full rounded-small p-2.5 bg-white text-sm font-mono"></div>
+        </div>
+        <div class="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-gray-100 text-xs text-gray-400"><span>🔒 SSL</span><span>✅ PCI</span><span>🛡️ Fraud Protected</span></div>
+        <div class="flex gap-3 mt-3"><button onclick="payGo(2)" class="flex-1 border-2 border-gray-200 text-gray-600 py-2.5 rounded-small font-bold hover:bg-gray-50 text-sm">← Back</button><button onclick="payStep3Next()" class="flex-1 shimmer-btn text-white py-2.5 rounded-small font-bold hover:scale-105 transform transition-all text-sm">Review &amp; Confirm →</button></div>
+      </div>
+      <!-- Step 4 -->
+      <div id="ps-4" class="payment-step">
+        <h4 class="font-heading font-bold text-gray-900 text-base mb-4">Confirm Your Order</h4>
+        <div id="confirm-sum" class="space-y-3 mb-5"></div>
+        <div class="bg-orange-50 border border-orange-200 rounded-small p-3 mb-5"><p class="text-orange-800 text-xs font-medium">⚠️ By placing this order you agree to our Terms of Service. First payment charged today.</p></div>
+        <div class="flex gap-3"><button onclick="payGo(3)" class="flex-1 border-2 border-gray-200 text-gray-600 py-2.5 rounded-small font-bold hover:bg-gray-50 text-sm">← Back</button><button id="place-btn" onclick="placeOrder()" class="flex-1 shimmer-btn-green text-white py-2.5 rounded-small font-bold hover:scale-105 transform transition-all text-sm">✅ Place Order</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div id="success-modal" class="modal-overlay">
+  <div class="modal-box text-center p-8" onclick="event.stopPropagation()" style="max-width:460px;">
+    <div class="success-pop w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 text-4xl">✅</div>
+    <h3 class="font-heading text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h3>
+    <p class="text-gray-600 mb-1 text-sm">Your insurance policies are now active.</p>
+    <p id="suc-order" class="text-blue-600 font-bold text-xs mb-5"></p>
+    <div id="suc-items" class="bg-gray-50 rounded-large p-4 mb-5 text-left space-y-2 text-sm"></div>
+    <div class="bg-blue-50 rounded-large p-4 mb-5 text-xs text-blue-800 text-left space-y-1"><p class="font-bold mb-1">What's next?</p><p>📧 Policy docs sent to your email in 5 min</p><p>📱 Download SecureGuard app to manage policies</p><p>📞 Your agent will call within 24 hours</p></div>
+    <button onclick="closeModal('success-modal');clearCart();" class="w-full shimmer-btn text-white py-3 rounded-small font-bold hover:scale-105 transform transition-all shadow-custom">🏠 Back to Home</button>
+  </div>
+</div>
+
+<!-- Contact Modal -->
+<div id="contact-modal" class="modal-overlay" onclick="if(event.target===this)closeModal('contact-modal')">
+  <div class="modal-box p-6" onclick="event.stopPropagation()" style="max-width:500px;">
+    <div class="flex items-center justify-between mb-5"><h3 class="font-heading text-xl font-bold text-gray-900">Send Us a Message</h3><button onclick="closeModal('contact-modal')" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500">✕</button></div>
+    <form id="contact-form" onsubmit="submitContact(event)" class="space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-bold text-gray-600 mb-1">Full Name *</label><input id="cf-name" type="text" placeholder="John Doe" class="input-animated w-full rounded-small p-2.5 bg-white text-sm"><p id="cf-name-e" class="text-red-500 text-xs mt-0.5 hidden">Required.</p></div>
+        <div><label class="block text-xs font-bold text-gray-600 mb-1">Email *</label><input id="cf-email" type="email" placeholder="john@example.com" class="input-animated w-full rounded-small p-2.5 bg-white text-sm"><p id="cf-email-e" class="text-red-500 text-xs mt-0.5 hidden">Invalid.</p></div>
+      </div>
+      <div><label class="block text-xs font-bold text-gray-600 mb-1">Subject *</label><select id="cf-sub" class="input-animated w-full rounded-small p-2.5 bg-white text-sm"><option value="">Select subject</option><option>General Inquiry</option><option>Policy Question</option><option>File a Claim</option><option>Billing Issue</option><option>Other</option></select><p id="cf-sub-e" class="text-red-500 text-xs mt-0.5 hidden">Please select.</p></div>
+      <div><label class="block text-xs font-bold text-gray-600 mb-1">Message *</label><textarea id="cf-msg" rows="4" placeholder="How can we help?" class="input-animated w-full rounded-small p-2.5 bg-white text-sm resize-none"></textarea><p id="cf-msg-e" class="text-red-500 text-xs mt-0.5 hidden">Please enter message.</p></div>
+      <button type="submit" id="cf-btn" class="w-full shimmer-btn text-white py-3 rounded-small font-bold hover:scale-105 transform transition-all shadow-custom">Send Message ✉️</button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════ NAVIGATION ═══════════════ -->
+<nav class="bg-white/95 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-custom">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between h-18 py-3">
+      <div class="flex items-center gap-8">
+        <button onclick="goHome()" class="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+          <div class="w-9 h-9 shimmer-btn-blue rounded-small flex items-center justify-center text-white font-heading font-bold text-lg shadow-custom">S</div>
+          <span class="font-heading text-xl font-bold text-blue-900">SecureGuard</span>
+        </button>
+        <div class="hidden md:flex items-center gap-1">
+          <button onclick="goHome()" class="nav-link text-gray-600 hover:text-blue-700 px-3 py-2 text-sm font-medium transition-colors rounded-small hover:bg-blue-50">Home</button>
+          <button onclick="scrollToSection('services-section')" class="nav-link text-gray-600 hover:text-blue-700 px-3 py-2 text-sm font-medium transition-colors rounded-small hover:bg-blue-50">Services</button>
+          <button onclick="scrollToSection('offers-section')" class="nav-link text-gray-600 hover:text-blue-700 px-3 py-2 text-sm font-medium transition-colors rounded-small hover:bg-blue-50">Offers</button>
+          <button onclick="scrollToSection('contact-section')" class="nav-link text-gray-600 hover:text-blue-700 px-3 py-2 text-sm font-medium transition-colors rounded-small hover:bg-blue-50">Contact</button>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="tel:18007328731" class="hidden md:flex items-center gap-1 text-sm text-gray-600 hover:text-blue-700 transition-colors">📞 <span class="text-blue-700 font-bold">1-800-SECURE</span></a>
+        <button onclick="openCart()" class="relative w-10 h-10 bg-blue-50 hover:bg-blue-100 rounded-small flex items-center justify-center transition-all hover:scale-110 transform" id="cart-nav-btn">
+          <span class="text-lg">🛒</span>
+          <span id="cart-badge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center">0</span>
+        </button>
+        <button id="mob-menu-btn" onclick="toggleMobileMenu()" class="md:hidden text-gray-500 hover:text-gray-700 p-2 rounded-small hover:bg-gray-100 transition-colors">
+          <svg id="menu-ic" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+          <svg id="close-ic" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mob-menu" class="mobile-menu md:hidden border-t border-gray-100">
+      <div class="py-3 space-y-1">
+        <button onclick="goHome();closeMobMenu();" class="block w-full text-left px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-small font-medium text-sm">🏠 Home</button>
+        <button onclick="scrollToSection('services-section');closeMobMenu();" class="block w-full text-left px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-small font-medium text-sm">🛡️ Services</button>
+        <button onclick="scrollToSection('offers-section');closeMobMenu();" class="block w-full text-left px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-small font-medium text-sm">🔥 Offers</button>
+        <button onclick="scrollToSection('contact-section');closeMobMenu();" class="block w-full text-left px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-small font-medium text-sm">📞 Contact</button>
+        <div class="px-4 pt-2 flex gap-2">
+          <button onclick="openCart();closeMobMenu();" class="flex-1 border-2 border-blue-600 text-blue-600 py-2 rounded-small font-bold text-sm">🛒 Cart</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════ PAGE: HOME ═══════════════ -->
+<div id="page-home" class="page active">
+
+  <!-- Hero -->
+  <section class="relative gradient-hero overflow-hidden max-h-[860px]">
+    <div class="hero-orb w-80 h-80 bg-blue-400 top-[-60px] left-[-60px]"></div>
+    <div class="hero-orb w-64 h-64 bg-orange-400 bottom-[-40px] right-[-40px]" style="animation-delay:2s;"></div>
+    <div class="particle w-2 h-2 bg-white/30" style="left:15%;animation-duration:8s;"></div>
+    <div class="particle w-1.5 h-1.5 bg-orange-300/50" style="left:40%;animation-duration:10s;animation-delay:2s;"></div>
+    <div class="particle w-2 h-2 bg-blue-300/40" style="left:70%;animation-duration:7s;animation-delay:1s;"></div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28 flex flex-col lg:flex-row items-center gap-10">
+      <div class="lg:w-1/2 reveal">
+        <div class="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-small mb-5"><span class="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></span>Trusted by 50,000+ Families</div>
+        <h1 class="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-5 leading-tight">Protecting Your Future,<span class="gradient-text block mt-1">Today.</span></h1>
+        <p class="text-lg text-blue-100 mb-7 max-w-lg leading-relaxed">Comprehensive coverage for every need. Choose from 6 insurance categories with multiple sub-plans tailored to your lifestyle.</p>
+        <div class="flex flex-col sm:flex-row gap-3 mb-8">
+          <button onclick="scrollToSection('services-section')" class="shimmer-btn text-white px-7 py-3.5 rounded-small text-sm font-bold shadow-custom hover:scale-105 transform transition-all">🛡️ Explore All Plans</button>
+          <button onclick="openCart()" class="bg-white/10 border border-white/30 text-white px-7 py-3.5 rounded-small text-sm font-medium hover:bg-white/20 transition-all hover:scale-105 transform flex items-center justify-center gap-2">🛒 View Cart <span id="hero-badge" class="hidden bg-orange-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">0</span></button>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <div class="floating-badge flex items-center gap-2 bg-white/10 border border-white/20 rounded-small px-3 py-2 cursor-pointer hover:bg-white/20 transition-all" onclick="showToast('⭐ Rated 4.9/5 from 12,000+ reviews!','info')"><span class="text-orange-400">⭐</span><div><p class="text-white text-xs font-bold">4.9/5 Rating</p><p class="text-blue-300 text-xs">12K+ Reviews</p></div></div>
+          <div class="floating-badge-2 flex items-center gap-2 bg-white/10 border border-white/20 rounded-small px-3 py-2 cursor-pointer hover:bg-white/20 transition-all" onclick="showToast('🏆 Best Insurance Provider 2024!','info')"><span class="text-orange-400">🏆</span><div><p class="text-white text-xs font-bold">Award Winner</p><p class="text-blue-300 text-xs">Best 2024</p></div></div>
+          <div class="floating-badge flex items-center gap-2 bg-white/10 border border-white/20 rounded-small px-3 py-2 cursor-pointer hover:bg-white/20 transition-all" onclick="showToast('🛡️ A+ Rated by AM Best','info')"><span class="text-orange-400">🛡️</span><div><p class="text-white text-xs font-bold">A+ Rated</p><p class="text-blue-300 text-xs">AM Best</p></div></div>
+        </div>
+      </div>
+      <div class="lg:w-1/2 w-full reveal">
+        <div class="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-large shadow-custom max-w-md mx-auto lg:ml-auto">
+          <h3 class="font-heading text-xl font-bold text-white mb-1">Quick Add to Cart</h3>
+          <p class="text-blue-200 text-xs mb-5">Select type, sub-category &amp; coverage</p>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-blue-100 mb-1">Insurance Type</label>
+              <select id="hero-type" onchange="updateHeroSubs()" class="w-full bg-white/10 border border-white/30 text-white rounded-small p-2.5 outline-none text-sm">
+                <option class="text-gray-900" value="home">🏠 Home Insurance</option>
+                <option class="text-gray-900" value="auto">🚗 Auto Insurance</option>
+                <option class="text-gray-900" value="life">❤️ Life Insurance</option>
+                <option class="text-gray-900" value="business">💼 Business Insurance</option>
+                <option class="text-gray-900" value="renters">🔑 Renters Insurance</option>
+                <option class="text-gray-900" value="travel">✈️ Travel Insurance</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-blue-100 mb-1">Sub-Category</label>
+              <select id="hero-sub" onchange="updateHeroPrices()" class="w-full bg-white/10 border border-white/30 text-white rounded-small p-2.5 outline-none text-sm"></select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-blue-100 mb-2">Coverage Level</label>
+              <div class="grid grid-cols-3 gap-2">
+                <button type="button" id="hc-basic" onclick="selectHeroCov('basic')" class="py-2 rounded-small text-xs font-bold border-2 border-white/30 text-white hover:border-white/60 transition-all">Basic<br><span id="hc-basic-p" class="text-blue-300 text-xs">$29</span></button>
+                <button type="button" id="hc-std" onclick="selectHeroCov('standard')" class="py-2 rounded-small text-xs font-bold border-2 border-orange-400 bg-orange-500/20 text-white transition-all">Standard<br><span id="hc-std-p" class="text-orange-300 text-xs">$49</span></button>
+                <button type="button" id="hc-prem" onclick="selectHeroCov('premium')" class="py-2 rounded-small text-xs font-bold border-2 border-white/30 text-white hover:border-white/60 transition-all">Premium<br><span id="hc-prem-p" class="text-blue-300 text-xs">$79</span></button>
+              </div>
+            </div>
+            <button onclick="heroAdd()" id="hero-add-btn" class="w-full shimmer-btn-green text-white py-3 rounded-small font-bold hover:scale-105 transform transition-all shadow-custom text-sm">🛒 Add to Cart</button>
+            <p class="text-xs text-blue-300 text-center">No commitment. Cancel anytime.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="absolute bottom-0 left-0 right-0"><svg viewBox="0 0 1440 50" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full h-10"><path d="M0,30 C360,60 1080,0 1440,30 L1440,50 L0,50 Z" fill="#f9fafb"></path></svg></div>
+  </section>
+
+  <!-- Stats -->
+  <section class="py-12 bg-gray-50 max-h-[300px]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="stat-card reveal stagger-1 text-center p-5 rounded-large bg-white border border-blue-100 shadow-custom cursor-pointer" onclick="showToast('🏠 50,000+ families trust SecureGuard.','info')"><div class="text-3xl font-heading font-bold text-blue-700 mb-1" id="stat-1">0</div><div class="text-xs text-gray-600 font-medium">Families Protected</div><div class="progress-bar mt-2 w-3/4 mx-auto"></div></div>
+        <div class="stat-card reveal stagger-2 text-center p-5 rounded-large bg-white border border-orange-100 shadow-custom cursor-pointer" onclick="showToast('💰 $2B+ in claims paid since 1995.','info')"><div class="text-3xl font-heading font-bold text-orange-600 mb-1" id="stat-2">$0</div><div class="text-xs text-gray-600 font-medium">Claims Paid Out</div><div class="progress-bar mt-2 w-4/5 mx-auto" style="background:linear-gradient(90deg,#f57f00,#ffbb4d);"></div></div>
+        <div class="stat-card reveal stagger-3 text-center p-5 rounded-large bg-white border border-blue-100 shadow-custom cursor-pointer" onclick="showToast('✅ 98% of claims approved.','info')"><div class="text-3xl font-heading font-bold text-blue-700 mb-1" id="stat-3">0%</div><div class="text-xs text-gray-600 font-medium">Claims Approved</div><div class="progress-bar mt-2 w-11/12 mx-auto"></div></div>
+        <div class="stat-card reveal stagger-4 text-center p-5 rounded-large bg-white border border-orange-100 shadow-custom cursor-pointer" onclick="showToast('🏆 29 years of excellence.','info')"><div class="text-3xl font-heading font-bold text-orange-600 mb-1" id="stat-4">0yr</div><div class="text-xs text-gray-600 font-medium">Years of Excellence</div><div class="progress-bar mt-2 w-2/3 mx-auto" style="background:linear-gradient(90deg,#f57f00,#ffbb4d);"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SERVICES WITH SUB-CATEGORIES ═══ -->
+  <section id="services-section" class="py-16 bg-white max-h-[3200px]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto mb-12 reveal">
+        <span class="inline-block bg-blue-100 text-blue-700 text-xs font-bold px-4 py-1.5 rounded-small mb-3 uppercase tracking-widest">Our Services</span>
+        <h2 class="font-heading text-3xl md:text-4xl font-bold text-gray-900 mb-3">Insurance for Every Situation</h2>
+        <p class="text-gray-600">Click any service to explore sub-categories. Each sub-plan is tailored to your specific needs.</p>
+      </div>
+
+      <!-- HOME INSURANCE -->
+      <div class="mb-6 reveal stagger-1">
+        <div onclick="toggleService('home')" class="flex items-center justify-between p-5 bg-white rounded-large border-2 border-gray-200 hover:border-blue-400 cursor-pointer transition-all shadow-custom hover:shadow-custom-hover group">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-50 rounded-small flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🏠</div>
+            <div>
+              <h3 class="font-heading text-lg font-bold text-gray-900">Home Insurance</h3>
+              <p class="text-gray-500 text-sm">5 sub-categories · From $35/mo</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span id="cart-ind-home" class="hidden bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-small">✓ In Cart</span>
+            <span id="arrow-home" class="text-gray-400 text-xl transition-transform duration-300">▼</span>
+          </div>
+        </div>
+        <div id="sub-home" class="sub-expand">
+          <div class="pt-4 pb-2 px-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div onclick="openSubPage('home','single')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center">
+                <div class="text-3xl mb-3">🏡</div>
+                <h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Single Family</h4>
+                <p class="text-gray-500 text-xs mb-3">Standalone home coverage</p>
+                <span class="text-blue-700 font-bold text-sm">From $55/mo</span>
+              </div>
+              <div onclick="openSubPage('home','condo')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center">
+                <div class="text-3xl mb-3">🏢</div>
+                <h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Condo</h4>
+                <p class="text-gray-500 text-xs mb-3">Unit &amp; interior coverage</p>
+                <span class="text-blue-700 font-bold text-sm">From $45/mo</span>
+              </div>
+              <div onclick="openSubPage('home','townhouse')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center">
+                <div class="text-3xl mb-3">🏘️</div>
+                <h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Townhouse</h4>
+                <p class="text-gray-500 text-xs mb-3">Multi-level home plans</p>
+                <span class="text-blue-700 font-bold text-sm">From $50/mo</span>
+              </div>
+              <div onclick="openSubPage('home','mobile')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center">
+                <div class="text-3xl mb-3">🚐</div>
+                <h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Mobile Home</h4>
+                <p class="text-gray-500 text-xs mb-3">Manufactured home plans</p>
+                <span class="text-blue-700 font-bold text-sm">From $35/mo</span>
+              </div>
+              <div onclick="openSubPage('home','vacation')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center">
+                <div class="text-3xl mb-3">🏖️</div>
+                <h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Vacation Home</h4>
+                <p class="text-gray-500 text-xs mb-3">Secondary property plans</p>
+                <span class="text-blue-700 font-bold text-sm">From $65/mo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUTO INSURANCE -->
+      <div class="mb-6 reveal stagger-2">
+        <div onclick="toggleService('auto')" class="flex items-center justify-between p-5 bg-white rounded-large border-2 border-gray-200 hover:border-orange-400 cursor-pointer transition-all shadow-custom hover:shadow-custom-hover group">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-orange-50 rounded-small flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🚗</div>
+            <div>
+              <h3 class="font-heading text-lg font-bold text-gray-900">Auto Insurance</h3>
+              <p class="text-gray-500 text-sm">5 sub-categories · From $22/mo</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span id="cart-ind-auto" class="hidden bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-small">✓ In Cart</span>
+            <span id="arrow-auto" class="text-gray-400 text-xl transition-transform duration-300">▼</span>
+          </div>
+        </div>
+        <div id="sub-auto" class="sub-expand">
+          <div class="pt-4 pb-2 px-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div onclick="openSubPage('auto','personal')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🚙</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Personal Car</h4><p class="text-gray-500 text-xs mb-3">Everyday vehicle coverage</p><span class="text-blue-700 font-bold text-sm">From $29/mo</span></div>
+              <div onclick="openSubPage('auto','suv')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🚐</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">SUV / Truck</h4><p class="text-gray-500 text-xs mb-3">Large vehicle plans</p><span class="text-blue-700 font-bold text-sm">From $39/mo</span></div>
+              <div onclick="openSubPage('auto','motorcycle')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🏍️</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Motorcycle</h4><p class="text-gray-500 text-xs mb-3">Bike &amp; scooter coverage</p><span class="text-blue-700 font-bold text-sm">From $22/mo</span></div>
+              <div onclick="openSubPage('auto','classic')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🏎️</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Classic Car</h4><p class="text-gray-500 text-xs mb-3">Collector vehicle plans</p><span class="text-blue-700 font-bold text-sm">From $45/mo</span></div>
+              <div onclick="openSubPage('auto','commercial')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🚛</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Commercial</h4><p class="text-gray-500 text-xs mb-3">Fleet &amp; business vehicles</p><span class="text-blue-700 font-bold text-sm">From $89/mo</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIFE INSURANCE -->
+      <div class="mb-6 reveal stagger-3">
+        <div onclick="toggleService('life')" class="flex items-center justify-between p-5 bg-white rounded-large border-2 border-gray-200 hover:border-blue-400 cursor-pointer transition-all shadow-custom hover:shadow-custom-hover group">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-50 rounded-small flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">❤️</div>
+            <div>
+              <h3 class="font-heading text-lg font-bold text-gray-900">Life Insurance</h3>
+              <p class="text-gray-500 text-sm">5 sub-categories · From $12/mo</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span id="cart-ind-life" class="hidden bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-small">✓ In Cart</span>
+            <span id="arrow-life" class="text-gray-400 text-xl transition-transform duration-300">▼</span>
+          </div>
+        </div>
+        <div id="sub-life" class="sub-expand">
+          <div class="pt-4 pb-2 px-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div onclick="openSubPage('life','term')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">📅</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Term Life</h4><p class="text-gray-500 text-xs mb-3">Fixed-period coverage</p><span class="text-blue-700 font-bold text-sm">From $19/mo</span></div>
+              <div onclick="openSubPage('life','whole')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">♾️</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Whole Life</h4><p class="text-gray-500 text-xs mb-3">Lifetime coverage + cash</p><span class="text-blue-700 font-bold text-sm">From $49/mo</span></div>
+              <div onclick="openSubPage('life','universal')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🔄</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Universal Life</h4><p class="text-gray-500 text-xs mb-3">Flexible premium plans</p><span class="text-blue-700 font-bold text-sm">From $39/mo</span></div>
+              <div onclick="openSubPage('life','final')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🕊️</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Final Expense</h4><p class="text-gray-500 text-xs mb-3">End-of-life coverage</p><span class="text-blue-700 font-bold text-sm">From $12/mo</span></div>
+              <div onclick="openSubPage('life','group')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">👥</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Group Life</h4><p class="text-gray-500 text-xs mb-3">Employer-sponsored plans</p><span class="text-blue-700 font-bold text-sm">From $15/mo</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BUSINESS INSURANCE -->
+      <div class="mb-6 reveal stagger-4">
+        <div onclick="toggleService('business')" class="flex items-center justify-between p-5 bg-white rounded-large border-2 border-gray-200 hover:border-orange-400 cursor-pointer transition-all shadow-custom hover:shadow-custom-hover group">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-orange-50 rounded-small flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">💼</div>
+            <div>
+              <h3 class="font-heading text-lg font-bold text-gray-900">Business Insurance</h3>
+              <p class="text-gray-500 text-sm">5 sub-categories · From $59/mo</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span id="cart-ind-business" class="hidden bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-small">✓ In Cart</span>
+            <span id="arrow-business" class="text-gray-400 text-xl transition-transform duration-300">▼</span>
+          </div>
+        </div>
+        <div id="sub-business" class="sub-expand">
+          <div class="pt-4 pb-2 px-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div onclick="openSubPage('business','small')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🏪</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Small Business</h4><p class="text-gray-500 text-xs mb-3">Startups &amp; sole traders</p><span class="text-blue-700 font-bold text-sm">From $89/mo</span></div>
+              <div onclick="openSubPage('business','llc')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🏛️</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">LLC / Corp</h4><p class="text-gray-500 text-xs mb-3">Corporate liability plans</p><span class="text-blue-700 font-bold text-sm">From $149/mo</span></div>
+              <div onclick="openSubPage('business','retail')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🛍️</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Retail Store</h4><p class="text-gray-500 text-xs mb-3">Storefront &amp; inventory</p><span class="text-blue-700 font-bold text-sm">From $99/mo</span></div>
+              <div onclick="openSubPage('business','restaurant')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🍽️</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Restaurant</h4><p class="text-gray-500 text-xs mb-3">Food service coverage</p><span class="text-blue-700 font-bold text-sm">From $119/mo</span></div>
+              <div onclick="openSubPage('business','contractor')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🔨</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Contractor</h4><p class="text-gray-500 text-xs mb-3">Trades &amp; construction</p><span class="text-blue-700 font-bold text-sm">From $59/mo</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RENTERS INSURANCE -->
+      <div class="mb-6 reveal stagger-5">
+        <div onclick="toggleService('renters')" class="flex items-center justify-between p-5 bg-white rounded-large border-2 border-gray-200 hover:border-blue-400 cursor-pointer transition-all shadow-custom hover:shadow-custom-hover group">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-50 rounded-small flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🔑</div>
+            <div>
+              <h3 class="font-heading text-lg font-bold text-gray-900">Renters Insurance</h3>
+              <p class="text-gray-500 text-sm">5 sub-categories · From $8/mo</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span id="cart-ind-renters" class="hidden bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-small">✓ In Cart</span>
+            <span id="arrow-renters" class="text-gray-400 text-xl transition-transform duration-300">▼</span>
+          </div>
+        </div>
+        <div id="sub-renters" class="sub-expand">
+          <div class="pt-4 pb-2 px-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div onclick="openSubPage('renters','apartment')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🏙️</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Apartment</h4><p class="text-gray-500 text-xs mb-3">Standard rental coverage</p><span class="text-blue-700 font-bold text-sm">From $12/mo</span></div>
+              <div onclick="openSubPage('renters','studio')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🛋️</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Studio</h4><p class="text-gray-500 text-xs mb-3">Compact living coverage</p><span class="text-blue-700 font-bold text-sm">From $8/mo</span></div>
+              <div onclick="openSubPage('renters','shared')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🤝</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Shared Housing</h4><p class="text-gray-500 text-xs mb-3">Roommate-friendly plans</p><span class="text-blue-700 font-bold text-sm">From $9/mo</span></div>
+              <div onclick="openSubPage('renters','furnished')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🛏️</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Furnished Rental</h4><p class="text-gray-500 text-xs mb-3">High-value contents plan</p><span class="text-blue-700 font-bold text-sm">From $18/mo</span></div>
+              <div onclick="openSubPage('renters','student')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🎓</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Student Housing</h4><p class="text-gray-500 text-xs mb-3">Campus &amp; dorm coverage</p><span class="text-blue-700 font-bold text-sm">From $10/mo</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRAVEL INSURANCE -->
+      <div class="mb-6 reveal stagger-6">
+        <div onclick="toggleService('travel')" class="flex items-center justify-between p-5 bg-white rounded-large border-2 border-gray-200 hover:border-orange-400 cursor-pointer transition-all shadow-custom hover:shadow-custom-hover group">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-orange-50 rounded-small flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">✈️</div>
+            <div>
+              <h3 class="font-heading text-lg font-bold text-gray-900">Travel Insurance</h3>
+              <p class="text-gray-500 text-sm">5 sub-categories · From $7/trip</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span id="cart-ind-travel" class="hidden bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-small">✓ In Cart</span>
+            <span id="arrow-travel" class="text-gray-400 text-xl transition-transform duration-300">▼</span>
+          </div>
+        </div>
+        <div id="sub-travel" class="sub-expand">
+          <div class="pt-4 pb-2 px-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div onclick="openSubPage('travel','domestic')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🗺️</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Domestic Trip</h4><p class="text-gray-500 text-xs mb-3">Within-country coverage</p><span class="text-blue-700 font-bold text-sm">From $9/trip</span></div>
+              <div onclick="openSubPage('travel','international')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🌍</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">International</h4><p class="text-gray-500 text-xs mb-3">Worldwide travel plans</p><span class="text-blue-700 font-bold text-sm">From $19/trip</span></div>
+              <div onclick="openSubPage('travel','cruise')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🚢</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Cruise</h4><p class="text-gray-500 text-xs mb-3">Sea voyage coverage</p><span class="text-blue-700 font-bold text-sm">From $25/trip</span></div>
+              <div onclick="openSubPage('travel','adventure')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">🧗</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Adventure Sports</h4><p class="text-gray-500 text-xs mb-3">High-risk activity plans</p><span class="text-blue-700 font-bold text-sm">From $35/trip</span></div>
+              <div onclick="openSubPage('travel','annual')" class="sub-card bg-white rounded-large p-5 shadow-custom border border-gray-100 cursor-pointer text-center"><div class="text-3xl mb-3">📆</div><h4 class="font-heading font-bold text-gray-900 text-sm mb-1">Annual Multi-Trip</h4><p class="text-gray-500 text-xs mb-3">Unlimited trips/year</p><span class="text-blue-700 font-bold text-sm">From $7/trip</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bundle CTA -->
+      <div class="mt-8 reveal" style="background:linear-gradient(135deg,#0f172a,#1235e1);border-radius:var(--radius-large);padding:2rem;">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-5">
+          <div><h3 class="font-heading text-xl font-bold text-white mb-1">🎁 Bundle &amp; Save up to 30%</h3><p class="text-blue-200 text-sm">Add 2+ plans to your cart and discount applies automatically at checkout.</p></div>
+          <div class="flex gap-3 flex-shrink-0">
+            <button onclick="bundleAdd()" class="shimmer-btn text-white px-5 py-2.5 rounded-small font-bold hover:scale-105 transform transition-all shadow-custom text-sm">Add Home + Auto Bundle</button>
+            <button onclick="openCart()" class="bg-white/10 border border-white/30 text-white px-5 py-2.5 rounded-small font-bold hover:bg-white/20 transition-all text-sm">View Cart 🛒</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Offers -->
+  <section id="offers-section" class="py-16 relative overflow-hidden max-h-[1100px]" style="background:linear-gradient(135deg,#0f172a 0%,#1235e1 50%,#16278d 100%);">
+    <div class="hero-orb w-72 h-72 bg-orange-500 top-[-30px] right-[-30px]"></div>
+    <div class="hero-orb w-56 h-56 bg-blue-400 bottom-[-30px] left-[-30px]" style="animation-delay:1.5s;"></div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-10 reveal">
+        <span class="inline-block bg-white/10 text-white text-xs font-bold px-4 py-1.5 rounded-small mb-3 uppercase tracking-widest border border-white/20">🔥 Hot Deals</span>
+        <h2 class="font-heading text-3xl md:text-4xl font-bold text-white mb-2">Exclusive Offers</h2>
+        <p class="text-blue-200 text-sm">Save more when you choose SecureGuard.</p>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="offer-card bg-white/10 backdrop-blur-sm rounded-large p-6 flex flex-col md:flex-row items-center gap-5 border border-white/20 reveal stagger-1">
+          <img src="image/Home.png" alt="Bundle" class="w-full md:w-2/5 h-36 object-cover rounded-small flex-shrink-0">
+          <div><div class="inline-block bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-small mb-2">⭐ POPULAR</div><h3 class="font-heading text-lg font-bold text-white mb-1">Bundle &amp; Save 20%</h3><p class="text-blue-200 text-xs mb-3 leading-relaxed">Combine Home and Auto for significant savings on both premiums.</p><button onclick="claimOffer('Bundle &amp; Save 20%','Combine Home and Auto insurance and save up to 20% on both premiums.','BUNDLE20')" class="bg-orange-500 hover:bg-orange-400 text-white font-bold px-4 py-2 rounded-small text-xs transition-all hover:scale-105 transform">Claim Offer 🎁</button></div>
+        </div>
+        <div class="offer-card bg-white/10 backdrop-blur-sm rounded-large p-6 flex flex-col md:flex-row items-center gap-5 border border-white/20 reveal stagger-2">
+          <img src="image/family.png" alt="Family" class="w-full md:w-2/5 h-36 object-cover rounded-small flex-shrink-0">
+          <div><div class="inline-block bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-small mb-2">💚 FAMILY</div><h3 class="font-heading text-lg font-bold text-white mb-1">Family Plan - Save 30%</h3><p class="text-blue-200 text-xs mb-3 leading-relaxed">Cover your entire family under one plan and enjoy maximum savings.</p><button onclick="claimOffer('Family Plan - Save 30%','Cover your entire family under one comprehensive plan and save up to 30%.','FAMILY30')" class="bg-green-600 hover:bg-green-500 text-white font-bold px-4 py-2 rounded-small text-xs transition-all hover:scale-105 transform">Get Family Quote 👨‍👩‍👧</button></div>
+        </div>
+        <div class="offer-card bg-white/10 backdrop-blur-sm rounded-large p-6 flex flex-col md:flex-row items-center gap-5 border border-white/20 reveal stagger-3">
+          <img src="image/Driver.png" alt="Safe Driver" class="w-full md:w-2/5 h-36 object-cover rounded-small flex-shrink-0">
+          <div><div class="inline-block bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-small mb-2">🆕 NEW</div><h3 class="font-heading text-lg font-bold text-white mb-1">Safe Driver Discount</h3><p class="text-blue-200 text-xs mb-3 leading-relaxed">Accident-free for 3 years? Qualify for reduced deductibles.</p><button onclick="claimOffer('Safe Driver Discount','Accident-free for 3+ years? Enjoy reduced deductibles and lower rates.','SAFEDRV15')" class="bg-blue-500 hover:bg-blue-400 text-white font-bold px-4 py-2 rounded-small text-xs transition-all hover:scale-105 transform">Check Eligibility ✓</button></div>
+        </div>
+        <div class="offer-card bg-white/10 backdrop-blur-sm rounded-large p-6 flex flex-col md:flex-row items-center gap-5 border border-white/20 reveal stagger-4">
+          <img src="image/Buyer.png" alt="First Time" class="w-full md:w-2/5 h-36 object-cover rounded-small flex-shrink-0">
+          <div><div class="inline-block bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded-small mb-2">🎉 FIRST TIME</div><h3 class="font-heading text-lg font-bold text-white mb-1">First-Time Buyer Bonus</h3><p class="text-blue-200 text-xs mb-3 leading-relaxed">New to insurance? Get 3 months free on your first annual policy.</p><button onclick="claimOffer('First-Time Buyer Bonus','Sign up for your first annual policy and get 3 months completely free.','FIRST3FREE')" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2 rounded-small text-xs transition-all hover:scale-105 transform">Claim Bonus 🎉</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="py-16 bg-gray-50 max-h-[700px]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-10 reveal">
+        <span class="inline-block bg-orange-100 text-orange-700 text-xs font-bold px-4 py-1.5 rounded-small mb-3 uppercase tracking-widest">Reviews</span>
+        <h2 class="font-heading text-3xl font-bold text-gray-900">What Our Customers Say</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="testimonial-card bg-white rounded-large p-6 shadow-custom border border-gray-100 reveal stagger-1"><div class="text-orange-400 mb-3">★★★★★</div><p class="text-gray-600 text-sm leading-relaxed mb-5">"SecureGuard's Single Family Home plan was exactly what I needed. Claims process was smooth and fast!"</p><div class="flex items-center justify-between"><div class="flex items-center gap-3"><img src="image/Review1.png" alt="Sarah" class="w-9 h-9 rounded-full object-cover"><div><p class="font-bold text-gray-900 text-sm">Sarah Mitchell</p><p class="text-gray-400 text-xs">Single Family Home</p></div></div><button onclick="openSubPage('home','single')" class="text-blue-600 text-xs hover:underline">View Plan</button></div></div>
+        <div class="testimonial-card bg-white rounded-large p-6 shadow-custom border border-gray-100 reveal stagger-2"><div class="text-orange-400 mb-3">★★★★★</div><p class="text-gray-600 text-sm leading-relaxed mb-5">"The Personal Car + Condo bundle saved me $800/year. Incredible value and service!"</p><div class="flex items-center justify-between"><div class="flex items-center gap-3"><img src="image/Review2.png" alt="James" class="w-9 h-9 rounded-full object-cover"><div><p class="font-bold text-gray-900 text-sm">James Rodriguez</p><p class="text-gray-400 text-xs">Auto + Condo Bundle</p></div></div><button onclick="bundleAdd()" class="text-blue-600 text-xs hover:underline">Get Bundle</button></div></div>
+        <div class="testimonial-card bg-white rounded-large p-6 shadow-custom border border-gray-100 reveal stagger-3"><div class="text-orange-400 mb-3">★★★★★</div><p class="text-gray-600 text-sm leading-relaxed mb-5">"The Restaurant Business plan covered my kitchen fire completely. Couldn't be happier!"</p><div class="flex items-center justify-between"><div class="flex items-center gap-3"><img src="image/review3.png" alt="Emily" class="w-9 h-9 rounded-full object-cover"><div><p class="font-bold text-gray-900 text-sm">Emily Kwan</p><p class="text-gray-400 text-xs">Restaurant Insurance</p></div></div><button onclick="openSubPage('business','restaurant')" class="text-blue-600 text-xs hover:underline">View Plan</button></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact-section" class="py-16 bg-white max-h-[700px]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+        <div class="reveal-left">
+          <span class="inline-block bg-blue-100 text-blue-700 text-xs font-bold px-4 py-1.5 rounded-small mb-4 uppercase tracking-widest">Contact Us</span>
+          <h2 class="font-heading text-3xl font-bold text-gray-900 mb-5">We're Here to Help</h2>
+          <p class="text-gray-600 mb-7 text-sm leading-relaxed">Have questions about any plan or sub-category? Our team is available 24/7.</p>
+          <div class="space-y-5">
+            <a href="tel:18007328731" class="flex items-center gap-4 group"><div class="w-11 h-11 bg-blue-50 rounded-small flex items-center justify-center group-hover:bg-blue-100 transition-colors"><svg class="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg></div><div><p class="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">1-800-SECURE</p><p class="text-gray-500 text-xs">Mon–Sun, 24/7</p></div></a>
+            <a href="mailto:support@secureguard.com" class="flex items-center gap-4 group"><div class="w-11 h-11 bg-blue-50 rounded-small flex items-center justify-center group-hover:bg-blue-100 transition-colors"><svg class="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg></div><div><p class="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">support@secureguard.com</p><p class="text-gray-500 text-xs">Response within 2 hours</p></div></a>
+          </div>
+          <div class="mt-7 flex gap-3">
+            <button onclick="openModal('contact-modal')" class="shimmer-btn text-white px-5 py-3 rounded-small font-bold hover:scale-105 transform transition-all shadow-custom text-sm">✉️ Send Message</button>
+            <button onclick="openCart()" class="border-2 border-blue-600 text-blue-600 px-5 py-3 rounded-small font-bold hover:bg-blue-50 transition-all text-sm">🛒 View Cart</button>
+          </div>
+        </div>
+        <div class="reveal-right h-80 rounded-large overflow-hidden shadow-custom relative group">
+          <img src="image/Contactus.png" alt="Office" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-blue-900/60 to-transparent flex items-end p-5"><div><p class="text-white font-bold">New York Headquarters</p><p class="text-blue-200 text-xs">Open Mon–Fri, 9AM–6PM EST</p></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-blue-900 text-white pt-12 pb-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
+        <div>
+          <div class="flex items-center gap-2 mb-4"><div class="w-8 h-8 shimmer-btn rounded-small flex items-center justify-center text-white font-heading font-bold">S</div><span class="font-heading text-lg font-bold">SecureGuard</span></div>
+          <p class="text-blue-200 text-xs leading-relaxed mb-4">Providing reliable insurance solutions since 1995. Protecting what matters most.</p>
+        </div>
+        <div>
+          <h4 class="font-bold mb-4 text-sm">Quick Add</h4>
+          <ul class="space-y-2 text-blue-200 text-xs">
+            <li><button onclick="openSubPage('home','single')" class="hover:text-white transition-colors text-left">🏡 Single Family Home</button></li>
+            <li><button onclick="openSubPage('auto','personal')" class="hover:text-white transition-colors text-left">🚙 Personal Car</button></li>
+            <li><button onclick="openSubPage('life','term')" class="hover:text-white transition-colors text-left">📅 Term Life</button></li>
+            <li><button onclick="openSubPage('business','small')" class="hover:text-white transition-colors text-left">🏪 Small Business</button></li>
+            <li><button onclick="openSubPage('travel','international')" class="hover:text-white transition-colors text-left">🌍 International Travel</button></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold mb-4 text-sm">Company</h4>
+          <ul class="space-y-2 text-blue-200 text-xs">
+            <li><button onclick="showToast('About SecureGuard: Protecting families since 1995. 🏢','info')" class="hover:text-white transition-colors text-left">About Us</button></li>
+            <li><button onclick="showToast('We\'re hiring! Visit careers.secureguard.com 💼','info')" class="hover:text-white transition-colors text-left">Careers</button></li>
+            <li><button onclick="openModal('contact-modal')" class="hover:text-white transition-colors text-left">Contact Us</button></li>
+            <li><button onclick="showToast('Privacy Policy: Your data is 100% secure. 🔒','info')" class="hover:text-white transition-colors text-left">Privacy Policy</button></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold mb-4 text-sm">Newsletter</h4>
+          <p class="text-blue-200 text-xs mb-3">Subscribe for tips and exclusive offers.</p>
+          <form onsubmit="subNewsletter(event)" class="flex flex-col gap-2">
+            <input id="nl-email" type="email" placeholder="Your email" class="input-animated bg-blue-800 border-blue-700 text-white placeholder-blue-400 px-3 py-2 rounded-small text-xs outline-none">
+            <button type="submit" class="shimmer-btn text-white px-3 py-2 rounded-small font-bold text-xs hover:scale-105 transform transition-all">Subscribe ✉️</button>
+          </form>
+        </div>
+      </div>
+      <div class="border-t border-blue-800 pt-6 flex flex-col md:flex-row justify-between items-center">
+        <p class="text-blue-400 text-xs mb-3 md:mb-0">© 2024 SecureGuard Insurance. All rights reserved.</p>
+        <div class="flex gap-5 text-xs text-blue-400">
+          <button onclick="showToast('Terms of Service: Fair and transparent policies.','info')" class="hover:text-white transition-colors">Terms</button>
+          <button onclick="showToast('Privacy Policy: We never sell your data. 🔒','info')" class="hover:text-white transition-colors">Privacy</button>
+          <button onclick="openCart()" class="hover:text-white transition-colors">🛒 Cart</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════════════ PAGE: SUB-CATEGORY DETAIL ═══════════════ -->
+<div id="page-sub" class="page">
+  <!-- Breadcrumb -->
+  <div class="bg-white border-b border-gray-200 py-3">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2 text-sm text-gray-500">
+        <button onclick="goHome()" class="breadcrumb-item hover:text-blue-700 font-medium">Home</button>
+        <span>›</span>
+        <button id="bc-service" onclick="goHomeAndOpen()" class="breadcrumb-item hover:text-blue-700 font-medium"></button>
+        <span>›</span>
+        <span id="bc-sub" class="text-gray-900 font-bold"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sub-page Hero -->
+  <div id="sub-hero" class="relative overflow-hidden max-h-[500px]" style="background:linear-gradient(135deg,#0f172a 0%,#1235e1 50%,#16278d 100%);">
+    <div class="hero-orb w-64 h-64 bg-orange-400 top-[-30px] right-[-30px]"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 flex flex-col lg:flex-row items-center gap-8">
+      <div class="lg:w-3/5">
+        <div id="sub-badge" class="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-small mb-4"></div>
+        <h1 id="sub-title" class="font-heading text-3xl md:text-4xl font-bold text-white mb-3"></h1>
+        <p id="sub-desc" class="text-blue-100 text-sm leading-relaxed mb-6 max-w-lg"></p>
+        <div class="flex flex-wrap gap-3">
+          <button onclick="scrollToSubPricing()" class="shimmer-btn text-white px-6 py-3 rounded-small font-bold hover:scale-105 transform transition-all shadow-custom text-sm">View Pricing →</button>
+          <button onclick="openCart()" class="bg-white/10 border border-white/30 text-white px-6 py-3 rounded-small font-medium hover:bg-white/20 transition-all text-sm flex items-center gap-2">🛒 Cart <span id="sub-cart-badge" class="hidden bg-orange-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">0</span></button>
+        </div>
+      </div>
+      <div class="lg:w-2/5 w-full">
+        <div id="sub-hero-img" class="h-52 rounded-large overflow-hidden shadow-custom"><img id="sub-img" src="" alt="" class="w-full h-full object-cover"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sub-page Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- Features Grid -->
+    <div class="mb-12">
+      <h2 class="font-heading text-2xl font-bold text-gray-900 mb-6">What's Included</h2>
+      <div id="sub-features-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+    </div>
+
+    <!-- Pricing Section -->
+    <div id="sub-pricing-section" class="mb-12">
+      <h2 class="font-heading text-2xl font-bold text-gray-900 mb-2">Choose Your Coverage</h2>
+      <p class="text-gray-500 text-sm mb-6">Select the plan that fits your needs and budget.</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="sub-pricing-cards"></div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="mb-12">
+      <h2 class="font-heading text-2xl font-bold text-gray-900 mb-6">Frequently Asked Questions</h2>
+      <div id="sub-faq" class="space-y-3"></div>
+    </div>
+
+    <!-- Related Sub-Categories -->
+    <div>
+      <h2 class="font-heading text-2xl font-bold text-gray-900 mb-6">Other <span id="related-service-name"></span> Plans</h2>
+      <div id="related-subs" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Offer Claim Modal -->
+<div id="offer-modal" class="modal-overlay" onclick="if(event.target===this)closeModal('offer-modal')">
+  <div class="modal-box p-6" onclick="event.stopPropagation()" style="max-width:440px;">
+    <div class="flex items-center justify-between mb-4"><h3 id="om-title" class="font-heading text-lg font-bold text-gray-900"></h3><button onclick="closeModal('offer-modal')" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500">✕</button></div>
+    <p id="om-desc" class="text-gray-600 mb-5 text-sm leading-relaxed"></p>
+    <div class="bg-green-50 border border-green-200 rounded-large p-4 mb-5">
+      <p class="text-green-700 font-bold text-xs mb-2">🎉 Your Promo Code</p>
+      <div class="flex items-center gap-3"><span id="om-code" class="font-mono text-base font-bold text-green-800 bg-white border border-green-300 px-4 py-2 rounded-small flex-1 text-center"></span><button onclick="copyCode()" id="copy-btn" class="shimmer-btn text-white px-3 py-2 rounded-small font-bold text-xs hover:scale-105 transform transition-all">Copy</button></div>
+    </div>
+    <button onclick="closeModal('offer-modal');openCart();" class="w-full shimmer-btn text-white py-3 rounded-small font-bold hover:scale-105 transform transition-all shadow-custom text-sm">Apply &amp; View Cart →</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════════════════
+const SERVICES = {
+  home:{name:'Home Insurance',icon:'🏠',color:'blue',subs:{
+    single:{name:'Single Family Home',icon:'🏡',img:'image/Insurance/HomeInsurance.png',desc:'Comprehensive coverage for standalone single-family homes. Protects your dwelling, personal property, and liability against fire, theft, storms, and more.',prices:{basic:55,standard:85,premium:130},features:['Dwelling coverage up to $1M','Personal property protection','Liability coverage $300K','Natural disaster add-ons','Replacement cost coverage','24/7 claims support'],faq:[{q:'What does dwelling coverage include?',a:'Dwelling coverage protects the physical structure of your home including walls, roof, floors, and built-in appliances against covered perils.'},{q:'Is flood damage covered?',a:'Standard policies exclude flood damage. We offer separate flood insurance as an add-on for complete protection.'},{q:'How is my premium calculated?',a:'Premiums are based on your home\'s value, location, age, construction type, and your chosen deductible amount.'}]},
+    condo:{name:'Condo Insurance',icon:'🏢',img:'image/Insurance/Condo.png',desc:'Tailored coverage for condominium owners. Covers your unit\'s interior, personal belongings, and liability while complementing your HOA\'s master policy.',prices:{basic:45,standard:70,premium:105},features:['Interior unit coverage','Personal property protection','Loss assessment coverage','Liability protection $200K','Additional living expenses','HOA gap coverage'],faq:[{q:'How does condo insurance differ from homeowners?',a:'Condo insurance covers the interior of your unit and personal belongings, while your HOA\'s master policy covers the building exterior and common areas.'},{q:'What is loss assessment coverage?',a:'It covers your share of costs when your HOA makes a special assessment due to a covered loss in common areas.'},{q:'Do I need condo insurance if my HOA has coverage?',a:'Yes. HOA master policies typically don\'t cover your personal belongings, interior improvements, or personal liability.'}]},
+    townhouse:{name:'Townhouse Insurance',icon:'🏘️',img:'image/Insurance/Town.png',desc:'Specialized coverage for townhouse owners. Balances single-family and condo coverage to protect your multi-level home and shared walls.',prices:{basic:50,standard:80,premium:120},features:['Dwelling & structure coverage','Shared wall protection','Personal property coverage','Liability up to $300K','Loss of use coverage','Detached structures included'],faq:[{q:'Are shared walls covered?',a:'Yes, our townhouse policy includes coverage for shared walls and your portion of any shared structures.'},{q:'What about my attached garage?',a:'Attached garages are covered under the dwelling portion of your policy as part of the main structure.'},{q:'Is my HOA fee affected by my insurance?',a:'Your personal insurance is separate from HOA fees. However, we offer loss assessment coverage for HOA-related claims.'}]},
+    mobile:{name:'Mobile Home Insurance',icon:'🚐',img:'image/Insurance/MobileHome.png',desc:'Affordable protection designed specifically for manufactured and mobile homes. Covers your home whether it\'s in a park or on private land.',prices:{basic:35,standard:55,premium:85},features:['Manufactured home coverage','Trip collision coverage','Personal property protection','Liability coverage','Replacement cost option','Park liability included'],faq:[{q:'Is my mobile home covered while being transported?',a:'Yes, our trip collision coverage protects your home during transport to a new location.'},{q:'Does location affect my premium?',a:'Yes, whether your home is in a mobile home park or on private land affects your premium and coverage options.'},{q:'Can I get coverage for older mobile homes?',a:'Yes, we cover mobile homes of all ages, though older homes may require an inspection before coverage begins.'}]},
+    vacation:{name:'Vacation Home Insurance',icon:'🏖️',img:'image/Insurance/Vacation.png',desc:'Protect your secondary property and vacation retreat. Coverage for seasonal homes, beach houses, and mountain cabins with rental income protection.',prices:{basic:65,standard:100,premium:155},features:['Secondary home coverage','Rental income protection','Seasonal vacancy coverage','Vandalism protection','Natural disaster coverage','Liability for guests'],faq:[{q:'Can I rent out my vacation home?',a:'Yes, our premium plan includes rental income protection and liability coverage for paying guests.'},{q:'Is my vacation home covered when vacant?',a:'Standard policies may limit coverage during extended vacancies. Our vacation home policy is designed for seasonal use.'},{q:'What if my vacation home is in a flood zone?',a:'We offer flood insurance as an add-on, which is especially important for beach and waterfront properties.'}]}
+  }},
+  auto:{name:'Auto Insurance',icon:'🚗',color:'orange',subs:{
+    personal:{name:'Personal Car Insurance',icon:'🚙',img:'image/Insurance/personalcar.png',desc:'Complete coverage for your everyday personal vehicle. From fender benders to total loss, we\'ve got you covered with flexible deductibles and fast claims.',prices:{basic:29,standard:49,premium:79},features:['Collision coverage','Comprehensive coverage','Liability protection','Roadside assistance 24/7','Rental car reimbursement','Uninsured motorist coverage'],faq:[{q:'What is the difference between collision and comprehensive?',a:'Collision covers damage from accidents with other vehicles or objects. Comprehensive covers non-collision events like theft, weather, and animals.'},{q:'How does roadside assistance work?',a:'Call our 24/7 hotline and we\'ll dispatch help for towing, flat tires, dead batteries, lockouts, and fuel delivery.'},{q:'Can I add a new car to my policy?',a:'Yes, you can add or remove vehicles from your policy at any time. Contact us or use our app to make changes instantly.'}]},
+    suv:{name:'SUV & Truck Insurance',icon:'🚐',img:'image/Insurance/suv.png',desc:'Specialized coverage for SUVs, trucks, and large vehicles. Higher liability limits and comprehensive protection for your bigger investment.',prices:{basic:39,standard:65,premium:99},features:['Higher liability limits','Off-road coverage option','Towing capacity coverage','Cargo protection','Gap insurance available','Custom parts coverage'],faq:[{q:'Is off-road driving covered?',a:'Standard policies cover on-road incidents. Off-road coverage is available as an add-on for our premium plan.'},{q:'What about my truck\'s cargo?',a:'Cargo protection is included in our standard and premium plans, covering items in your truck bed up to specified limits.'},{q:'Can I insure my truck for business use?',a:'Personal truck policies cover personal use. For business use, we recommend our commercial vehicle insurance.'}]},
+    motorcycle:{name:'Motorcycle Insurance',icon:'🏍️',img:'image/Insurance/motorcycle.png',desc:'Tailored protection for motorcycles, scooters, and mopeds. Covers your ride with competitive rates and specialized coverage options for riders.',prices:{basic:22,standard:38,premium:62},features:['Collision & comprehensive','Liability coverage','Medical payments coverage','Custom equipment coverage','Roadside assistance','Helmet & gear coverage'],faq:[{q:'Is my custom motorcycle equipment covered?',a:'Yes, our standard and premium plans include coverage for custom parts and equipment up to specified limits.'},{q:'Are passengers covered?',a:'Yes, our liability coverage includes protection for passengers injured in an accident.'},{q:'Do you offer seasonal coverage?',a:'Yes, we offer lay-up coverage for months when you store your motorcycle, reducing your premium during off-season.'}]},
+    classic:{name:'Classic Car Insurance',icon:'🏎️',img:'image/Insurance/classiccar.png',desc:'Specialized agreed-value coverage for classic, vintage, and collector vehicles. Protect your prized possession with coverage designed for car enthusiasts.',prices:{basic:45,standard:72,premium:115},features:['Agreed value coverage','Spare parts coverage','Restoration coverage','Show coverage included','Flexible mileage plans','Inflation guard protection'],faq:[{q:'What is agreed value coverage?',a:'Unlike standard policies that pay actual cash value, agreed value coverage pays the full insured amount with no depreciation deduction.'},{q:'Are there mileage restrictions?',a:'We offer flexible mileage plans from pleasure-use only to higher annual mileage options based on how you use your classic car.'},{q:'Is my car covered at shows and exhibitions?',a:'Yes, show coverage is included in all our classic car plans, protecting your vehicle at exhibitions and car shows.'}]},
+    commercial:{name:'Commercial Vehicle Insurance',icon:'🚛',img:'image/Insurance/commercialVehi.png',desc:'Comprehensive coverage for business vehicles, fleets, and commercial trucks. Protect your business assets and employees on the road.',prices:{basic:89,standard:149,premium:229},features:['Fleet coverage options','Cargo liability coverage','Non-owned vehicle coverage','Driver injury protection','Business interruption','DOT compliance support'],faq:[{q:'Can I insure my entire fleet under one policy?',a:'Yes, our commercial fleet policy covers multiple vehicles under a single policy with volume discounts available.'},{q:'What cargo coverage is included?',a:'Cargo liability covers goods you\'re transporting. Coverage limits vary by plan and cargo type.'},{q:'Are hired and non-owned vehicles covered?',a:'Yes, our standard and premium plans include coverage for vehicles you hire or borrow for business purposes.'}]}
+  }},
+  life:{name:'Life Insurance',icon:'❤️',color:'blue',subs:{
+    term:{name:'Term Life Insurance',icon:'📅',img:'image/Insurance/termlife.png',desc:'Affordable fixed-period life insurance providing maximum coverage during your most critical years. Perfect for income replacement and mortgage protection.',prices:{basic:19,standard:39,premium:69},features:['Coverage up to $2M','Terms from 10-30 years','Level premium guarantee','Convertible to whole life','Accelerated death benefit','No medical exam option'],faq:[{q:'What happens when my term expires?',a:'You can renew your policy, convert it to permanent life insurance, or let it expire. We\'ll notify you 90 days before expiration.'},{q:'Can I increase my coverage amount?',a:'Coverage increases may require a new application and medical review. Contact us to discuss your options.'},{q:'Is there a waiting period?',a:'Coverage begins immediately upon policy approval and first premium payment. No waiting period for accidental death.'}]},
+    whole:{name:'Whole Life Insurance',icon:'♾️',img:'image/Insurance/wholelife.png',desc:'Permanent life insurance with guaranteed lifetime coverage and a cash value component that grows over time. Build wealth while protecting your family.',prices:{basic:49,standard:89,premium:149},features:['Lifetime coverage guarantee','Cash value accumulation','Tax-deferred growth','Policy loan option','Dividend potential','Fixed premium for life'],faq:[{q:'How does cash value work?',a:'A portion of your premium builds cash value that grows tax-deferred. You can borrow against it or surrender the policy for its cash value.'},{q:'Can I borrow against my policy?',a:'Yes, you can take loans against your cash value at competitive interest rates without a credit check or approval process.'},{q:'What are dividends?',a:'Participating whole life policies may pay annual dividends based on company performance, which can be taken as cash or used to increase coverage.'}]},
+    universal:{name:'Universal Life Insurance',icon:'🔄',img:'image/Insurance/universallife.png',desc:'Flexible permanent life insurance allowing you to adjust your premiums and death benefit as your needs change over time.',prices:{basic:39,standard:69,premium:119},features:['Flexible premium payments','Adjustable death benefit','Cash value component','Interest rate options','Partial withdrawals allowed','Indexed growth options'],faq:[{q:'How flexible are the premium payments?',a:'You can increase, decrease, or skip premium payments as long as your cash value is sufficient to cover policy costs.'},{q:'Can I change my death benefit?',a:'Yes, you can increase (subject to underwriting) or decrease your death benefit as your needs change.'},{q:'What happens if I miss a payment?',a:'If your cash value is sufficient, it will cover the policy costs. If not, you\'ll receive a grace period before the policy lapses.'}]},
+    final:{name:'Final Expense Insurance',icon:'🕊️',img:'image/Insurance/finalexp.png',desc:'Affordable whole life insurance designed to cover end-of-life expenses including funeral costs, medical bills, and outstanding debts.',prices:{basic:12,standard:22,premium:38},features:['Coverage $5K-$50K','Guaranteed acceptance option','No medical exam required','Immediate coverage','Fixed premiums for life','Beneficiary pays no taxes'],faq:[{q:'Is there a medical exam required?',a:'No medical exam is required. Our simplified issue plans only ask a few health questions, and guaranteed issue plans have no health questions at all.'},{q:'How quickly can I get coverage?',a:'Simplified issue policies are approved within 24-48 hours. Guaranteed issue policies are approved immediately upon application.'},{q:'What expenses does it cover?',a:'Final expense insurance can be used for any purpose including funeral costs, medical bills, legal fees, or any other expenses your family faces.'}]},
+    group:{name:'Group Life Insurance',icon:'👥',img:'image/Insurance/grouplife.png',desc:'Employer-sponsored life insurance providing coverage for groups of employees. Cost-effective protection that benefits both employers and employees.',prices:{basic:15,standard:28,premium:48},features:['Group rates available','No individual underwriting','Portable coverage option','Supplemental coverage add-on','AD&D coverage included','Dependent coverage available'],faq:[{q:'Can employees keep coverage if they leave?',a:'Yes, our portable coverage option allows employees to convert their group coverage to an individual policy when they leave employment.'},{q:'Is there a minimum group size?',a:'We offer group life insurance for businesses with as few as 2 employees, with competitive rates for larger groups.'},{q:'What is AD&D coverage?',a:'Accidental Death & Dismemberment coverage pays an additional benefit if death or serious injury occurs due to an accident.'}]}
+  }},
+  business:{name:'Business Insurance',icon:'💼',color:'orange',subs:{
+    small:{name:'Small Business Insurance',icon:'🏪',img:'image/Insurance/smallbus.png',desc:'Comprehensive protection for small businesses, startups, and sole proprietors. Bundle essential coverages at affordable rates to protect your livelihood.',prices:{basic:89,standard:149,premium:229},features:['General liability coverage','Business property protection','Business interruption insurance','Professional liability (E&O)','Cyber liability coverage','Workers compensation'],faq:[{q:'What is a BOP (Business Owner\'s Policy)?',a:'A BOP bundles general liability and commercial property insurance into one convenient policy, typically at a lower cost than buying separately.'},{q:'Do I need workers compensation?',a:'Workers compensation requirements vary by state and number of employees. We\'ll help you understand your legal obligations.'},{q:'What does cyber liability cover?',a:'Cyber liability covers data breaches, ransomware attacks, and other cyber incidents including notification costs and legal fees.'}]},
+    llc:{name:'LLC / Corporation Insurance',icon:'🏛️',img:'image/Insurance/llc.png',desc:'Specialized coverage for LLCs and corporations. Protect your business entity, directors, officers, and shareholders from liability and operational risks.',prices:{basic:149,standard:249,premium:399},features:['Directors & Officers (D&O)','Employment practices liability','Fiduciary liability coverage','Commercial umbrella policy','Key person insurance','Contract surety bonds'],faq:[{q:'What is Directors & Officers insurance?',a:'D&O insurance protects company directors and officers from personal liability for decisions made in their corporate roles.'},{q:'Do I need D&O if I\'m a small LLC?',a:'Even small LLCs can face lawsuits from employees, customers, or competitors. D&O provides essential protection for business leaders.'},{q:'What is employment practices liability?',a:'EPLI covers claims from employees alleging discrimination, harassment, wrongful termination, and other employment-related issues.'}]},
+    retail:{name:'Retail Store Insurance',icon:'🛍️',img:'image/Insurance/retail.png',desc:'Complete protection for retail businesses including storefronts, inventory, and customer liability. Designed for shops, boutiques, and retail chains.',prices:{basic:99,standard:169,premium:259},features:['Storefront property coverage','Inventory & merchandise','Customer liability protection','Employee dishonesty coverage','Business interruption','Shoplifting loss coverage'],faq:[{q:'Is my inventory covered against theft?',a:'Yes, our retail policies cover inventory loss from theft, vandalism, and other covered perils up to your policy limits.'},{q:'What if a customer is injured in my store?',a:'General liability coverage pays for medical expenses and legal costs if a customer is injured on your premises.'},{q:'Are my point-of-sale systems covered?',a:'Yes, business property coverage includes electronic equipment, POS systems, and computers used in your retail operations.'}]},
+    restaurant:{name:'Restaurant Insurance',icon:'🍽️',img:'image/Insurance/restaurant.png',desc:'Specialized insurance for restaurants, cafes, and food service businesses. Covers unique risks including food contamination, liquor liability, and kitchen fires.',prices:{basic:119,standard:199,premium:309},features:['Food contamination coverage','Liquor liability insurance','Kitchen equipment coverage','Spoilage protection','Slip & fall liability','Delivery driver coverage'],faq:[{q:'What is liquor liability insurance?',a:'Liquor liability covers claims arising from serving alcohol, including accidents caused by intoxicated customers who were served at your establishment.'},{q:'Is food spoilage covered?',a:'Yes, our restaurant policies include spoilage coverage for food inventory lost due to equipment breakdown or power outages.'},{q:'Are my delivery drivers covered?',a:'Delivery driver coverage is included in our standard and premium plans, covering accidents during food delivery operations.'}]},
+    contractor:{name:'Contractor Insurance',icon:'🔨',img:'image/Insurance/contractor.png',desc:'Essential coverage for contractors, tradespeople, and construction professionals. Protects you on every job site with liability and equipment coverage.',prices:{basic:59,standard:99,premium:159},features:['General liability coverage','Tools & equipment coverage','Completed operations coverage','Subcontractor coverage','Surety bonds available','Workers compensation'],faq:[{q:'What is completed operations coverage?',a:'Completed operations covers claims arising from work you\'ve already finished, such as a structure you built that later causes injury or damage.'},{q:'Are my tools covered if stolen from a job site?',a:'Yes, tools and equipment coverage protects your tools whether they\'re stolen from a job site, your vehicle, or your shop.'},{q:'Do I need to be licensed to get coverage?',a:'While we don\'t require licensing, many clients and contracts require it. We can help you understand your state\'s licensing requirements.'}]}
+  }},
+  renters:{name:'Renters Insurance',icon:'🔑',color:'blue',subs:{
+    apartment:{name:'Apartment Renters Insurance',icon:'🏙️',img:'image/Insurance/aptrenters.png',desc:'Affordable protection for apartment renters. Covers your personal belongings, provides liability protection, and pays for temporary housing if needed.',prices:{basic:12,standard:22,premium:35},features:['Personal property coverage','Liability protection $100K','Additional living expenses','Electronics & valuables','Identity theft protection','Worldwide belongings coverage'],faq:[{q:'Does my landlord\'s insurance cover my belongings?',a:'No. Your landlord\'s insurance only covers the building structure. Renters insurance covers your personal belongings and liability.'},{q:'What is additional living expenses coverage?',a:'If your apartment becomes uninhabitable due to a covered loss, we pay for hotel stays and additional food costs while repairs are made.'},{q:'Is my laptop covered outside my apartment?',a:'Yes, our worldwide belongings coverage protects your electronics and valuables even when you\'re away from home.'}]},
+    studio:{name:'Studio Apartment Insurance',icon:'🛋️',img:'image/Insurance/studio.png',desc:'Budget-friendly coverage designed for studio apartment dwellers. Maximum protection at minimum cost for compact living spaces.',prices:{basic:8,standard:15,premium:25},features:['Personal property coverage','Liability protection','Additional living expenses','Electronics coverage','Affordable deductibles','Easy online management'],faq:[{q:'Is studio insurance cheaper than apartment insurance?',a:'Yes, studio policies are typically less expensive because the living space and personal property values are generally lower.'},{q:'What\'s the minimum coverage I should get?',a:'We recommend at least enough coverage to replace all your belongings. Our basic plan starts at $8/month for up to $15,000 in coverage.'},{q:'Can I get coverage for my roommate too?',a:'Each person should have their own policy. However, we offer discounts when multiple people in the same unit each purchase coverage.'}]},
+    shared:{name:'Shared Housing Insurance',icon:'🤝',img:'image/Insurance/shared.png',desc:'Flexible coverage for shared living situations including roommate arrangements, co-living spaces, and house shares.',prices:{basic:9,standard:18,premium:29},features:['Individual belongings coverage','Shared space liability','Roommate-friendly terms','Flexible coverage limits','Easy policy management','Subletting coverage option'],faq:[{q:'Do I need separate insurance from my roommates?',a:'Yes, each roommate should have their own policy. Your renters insurance only covers your personal belongings, not your roommates\'.'},{q:'What if my roommate damages my belongings?',a:'Your policy covers your belongings regardless of who caused the damage, subject to your deductible.'},{q:'Can I add subletting coverage?',a:'Yes, if you sublet your room, we offer subletting coverage to protect you from liability related to your subtenant.'}]},
+    furnished:{name:'Furnished Rental Insurance',icon:'🛏️',img:'image/Insurance/FurnishedRental.png',desc:'Enhanced coverage for furnished rental properties with high-value contents. Protects expensive furniture, appliances, and personal valuables.',prices:{basic:18,standard:32,premium:52},features:['High-value contents coverage','Scheduled personal property','Jewelry & art coverage','Electronics protection','Liability up to $300K','Replacement cost coverage'],faq:[{q:'Can I insure high-value items separately?',a:'Yes, our scheduled personal property option allows you to insure specific high-value items like jewelry, art, and electronics for their full value.'},{q:'What is replacement cost coverage?',a:'Replacement cost coverage pays to replace your items with new ones of similar quality, rather than paying the depreciated value.'},{q:'Are my valuables covered when traveling?',a:'Yes, our premium plan includes worldwide coverage for your valuables, protecting them wherever you go.'}]},
+    student:{name:'Student Housing Insurance',icon:'🎓',img:'image/Insurance/studenthousing.png',desc:'Affordable insurance designed for college students living on or off campus. Covers laptops, textbooks, and personal belongings at student-friendly rates.',prices:{basic:10,standard:18,premium:28},features:['Laptop & electronics coverage','Textbook protection','Dorm room coverage','Off-campus coverage','Bicycle coverage included','Identity theft protection'],faq:[{q:'Am I covered in my dorm room?',a:'Yes, our student policy covers belongings in dorm rooms, off-campus apartments, and even in your car on campus.'},{q:'Is my laptop covered if it\'s stolen from the library?',a:'Yes, electronics coverage protects your laptop and other devices anywhere on or off campus.'},{q:'Can my parents add me to their homeowners policy?',a:'Some homeowners policies extend limited coverage to college students. However, a dedicated student renters policy typically offers better and more affordable coverage.'}]}
+  }},
+  travel:{name:'Travel Insurance',icon:'✈️',color:'orange',subs:{
+    domestic:{name:'Domestic Trip Insurance',icon:'🗺️',img:'image/Insurance/Domestic.png',desc:'Comprehensive coverage for travel within the United States. Protects against trip cancellations, delays, and unexpected medical expenses on domestic trips.',prices:{basic:9,standard:18,premium:29},features:['Trip cancellation coverage','Trip interruption protection','Travel delay compensation','Baggage loss & delay','Emergency medical coverage','24/7 travel assistance'],faq:[{q:'What qualifies as a covered cancellation reason?',a:'Covered reasons include illness, injury, death of a family member, severe weather, jury duty, job loss, and many other unforeseen circumstances.'},{q:'How much does baggage coverage pay?',a:'Baggage coverage pays up to your plan limits for lost, stolen, or damaged luggage. Premium plans cover up to $3,000 per person.'},{q:'Is there a waiting period after purchase?',a:'Coverage begins immediately for most benefits. Trip cancellation coverage begins at purchase, protecting you from day one.'}]},
+    international:{name:'International Travel Insurance',icon:'🌍',img:'image/Insurance/International.png',desc:'Complete worldwide travel protection for international trips. Includes emergency medical evacuation, foreign hospital coverage, and 24/7 global assistance.',prices:{basic:19,standard:35,premium:59},features:['Emergency medical up to $500K','Medical evacuation coverage','Trip cancellation & interruption','Passport & visa replacement','Political evacuation coverage','24/7 global assistance hotline'],faq:[{q:'Does my health insurance cover me abroad?',a:'Most US health insurance plans provide limited or no coverage outside the US. International travel insurance fills this critical gap.'},{q:'What is medical evacuation coverage?',a:'Medical evacuation covers the cost of transporting you to the nearest adequate medical facility or back home if medically necessary.'},{q:'Are pre-existing conditions covered?',a:'Pre-existing conditions may be covered if you purchase insurance within 14 days of your initial trip deposit and meet other requirements.'}]},
+    cruise:{name:'Cruise Travel Insurance',icon:'🚢',img:'image/Insurance/Cruise.png',desc:'Specialized insurance for cruise vacations. Covers unique cruise risks including missed port departures, cabin confinement, and itinerary changes.',prices:{basic:25,standard:45,premium:72},features:['Missed port departure coverage','Cabin confinement benefit','Itinerary change coverage','Shore excursion cancellation','Medical evacuation at sea','Cruise line default protection'],faq:[{q:'What is missed port departure coverage?',a:'If you miss your ship\'s departure due to a covered reason, we pay to transport you to the next port to rejoin the cruise.'},{q:'What if I get sick and confined to my cabin?',a:'Our cabin confinement benefit pays a daily amount if you\'re confined to your cabin due to illness during the cruise.'},{q:'Is the cruise line going bankrupt covered?',a:'Yes, our premium plan includes cruise line default protection, reimbursing you if the cruise line ceases operations before your trip.'}]},
+    adventure:{name:'Adventure Sports Insurance',icon:'🧗',img:'image/Insurance/Adventure.png',desc:'Specialized coverage for adventure travelers and extreme sports enthusiasts. Covers high-risk activities that standard travel insurance excludes.',prices:{basic:35,standard:59,premium:95},features:['Extreme sports coverage','Search & rescue coverage','Emergency evacuation','Equipment coverage','High-altitude coverage','Hazardous activity protection'],faq:[{q:'What adventure sports are covered?',a:'We cover skiing, snowboarding, rock climbing, scuba diving, skydiving, bungee jumping, white water rafting, and many more activities.'},{q:'What is search and rescue coverage?',a:'If you become lost or injured in a remote area, search and rescue coverage pays for the cost of finding and rescuing you.'},{q:'Is my sports equipment covered?',a:'Yes, our standard and premium plans include coverage for sports equipment loss, theft, or damage during your trip.'}]},
+    annual:{name:'Annual Multi-Trip Insurance',icon:'📆',img:'image/Insurance/Annual.png',desc:'Cost-effective annual coverage for frequent travelers. One policy covers unlimited trips throughout the year, making it perfect for business and leisure travelers.',prices:{basic:79,standard:129,premium:199},features:['Unlimited trips per year','Per-trip coverage up to 90 days','Business travel included','Family coverage option','Consistent coverage limits','Annual renewal discount'],faq:[{q:'How many trips can I take per year?',a:'There\'s no limit on the number of trips. Each trip is covered up to the maximum trip duration specified in your plan (30, 60, or 90 days).'},{q:'Does it cover both business and leisure travel?',a:'Yes, our annual multi-trip policy covers both business and leisure travel, making it perfect for frequent travelers.'},{q:'Can I add family members?',a:'Yes, family coverage is available and provides significant savings compared to purchasing individual annual policies for each family member.'}]}
+  }}
+};
+
+const PROMO_CODES = {
+  'BUNDLE20':{label:'Bundle 20% Off',type:'percent',value:20,min:2},
+  'SAFEDRV15':{label:'Safe Driver 15% Off',type:'percent',value:15,min:1},
+  'FAMILY30':{label:'Family 30% Off',type:'percent',value:30,min:2},
+  'FIRST3FREE':{label:'3 Months Free',type:'months',value:3,min:1},
+  'SAVE10':{label:'$10 Off',type:'fixed',value:10,min:1}
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════
+let cart = [];
+let appliedPromo = null;
+let heroCov = 'standard';
+let currentService = null;
+let currentSub = null;
+let activePayTab = 'card';
+let openServices = {};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════════════════
+function showToast(msg, type='success') {
+  const icons = {success:'✅',error:'❌',info:'ℹ️',warning:'⚠️'};
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').textContent = icons[type]||'ℹ️';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), 4000);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); if(!document.querySelector('.modal-overlay.open')&&!document.getElementById('cart-drawer').classList.contains('open')) document.body.style.overflow=''; }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PAGES
+// ═══════════════════════════════════════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function goHome() { showPage('page-home'); }
+function goHomeAndOpen() {
+  showPage('page-home');
+  if(currentService) setTimeout(()=>{ const el=document.getElementById(`sub-${currentService}`); if(el&&!openServices[currentService]) toggleService(currentService); scrollToSection('services-section'); },300);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SERVICE ACCORDION
+// ═══════════════════════════════════════════════════════════════════════════
+function toggleService(key) {
+  const el = document.getElementById(`sub-${key}`);
+  const arrow = document.getElementById(`arrow-${key}`);
+  if(!el) return;
+  if(openServices[key]) {
+    el.classList.remove('open');
+    arrow.style.transform = 'rotate(0deg)';
+    openServices[key] = false;
+  } else {
+    el.classList.add('open');
+    arrow.style.transform = 'rotate(180deg)';
+    openServices[key] = true;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUB-PAGE
+// ═══════════════════════════════════════════════════════════════════════════
+function openSubPage(serviceKey, subKey) {
+  const svc = SERVICES[serviceKey];
+  const sub = svc.subs[subKey];
+  if(!svc||!sub) return;
+  currentService = serviceKey;
+  currentSub = subKey;
+
+  document.getElementById('bc-service').textContent = svc.name;
+  document.getElementById('bc-sub').textContent = sub.name;
+  document.getElementById('sub-badge').innerHTML = `<span class="text-xl">${sub.icon}</span> ${svc.name}`;
+  document.getElementById('sub-title').textContent = sub.name;
+  document.getElementById('sub-desc').textContent = sub.desc;
+  document.getElementById('sub-img').src = sub.img;
+  document.getElementById('sub-img').alt = sub.name;
+
+  // Features
+  const featureIcons = ['🛡️','✅','💰','📋','🔒','⚡','🌟','📞','🏆','💎'];
+  document.getElementById('sub-features-grid').innerHTML = sub.features.map((f,i)=>`
+    <div class="bg-white rounded-large p-5 shadow-custom border border-gray-100 flex items-start gap-3 hover:shadow-custom-hover transition-all">
+      <div class="w-10 h-10 bg-blue-50 rounded-small flex items-center justify-center text-xl flex-shrink-0">${featureIcons[i%featureIcons.length]}</div>
+      <div><p class="font-medium text-gray-800 text-sm">${f}</p></div>
+    </div>`).join('');
+
+  // Pricing
+  const covLabels = {basic:{name:'Basic',desc:'Essential protection',color:'blue'},standard:{name:'Standard',desc:'Balanced coverage',color:'orange',popular:true},premium:{name:'Premium',desc:'Maximum protection',color:'blue'}};
+  document.getElementById('sub-pricing-cards').innerHTML = Object.entries(sub.prices).map(([cov,price])=>{
+    const cl = covLabels[cov];
+    return `<div class="bg-white rounded-large p-6 shadow-custom border-2 ${cl.popular?'border-orange-400':'border-gray-100'} relative hover:shadow-custom-hover transition-all">
+      ${cl.popular?'<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-small">⭐ POPULAR</div>':''}
+      <h3 class="font-heading text-lg font-bold text-gray-900 mb-1">${cl.name}</h3>
+      <p class="text-gray-500 text-xs mb-4">${cl.desc}</p>
+      <div class="text-3xl font-heading font-bold text-blue-700 mb-1">$${price}<span class="text-sm text-gray-500 font-normal">/mo</span></div>
+      <p class="text-gray-400 text-xs mb-5">Billed monthly, cancel anytime</p>
+      <ul class="space-y-2 mb-6">${sub.features.slice(0,4).map(f=>`<li class="flex items-center gap-2 text-xs text-gray-600"><span class="w-4 h-4 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">✓</span>${f}</li>`).join('')}</ul>
+      <button onclick="addToCart('${svc.name} - ${sub.name}','${cov}',${price},'${serviceKey}','${sub.icon}')" class="w-full ${cl.popular?'shimmer-btn':'shimmer-btn-blue'} text-white py-3 rounded-small font-bold hover:scale-105 transform transition-all shadow-custom text-sm">🛒 Add to Cart</button>
+    </div>`;
+  }).join('');
+
+  // FAQ
+  document.getElementById('sub-faq').innerHTML = sub.faq.map((item,i)=>`
+    <div class="bg-white rounded-large border border-gray-200 overflow-hidden shadow-sm">
+      <button onclick="toggleFaq(${i})" class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors">
+        <span class="font-medium text-gray-900 text-sm">${item.q}</span>
+        <span id="faq-arrow-${i}" class="text-gray-400 text-lg transition-transform duration-300 flex-shrink-0 ml-3">▼</span>
+      </button>
+      <div id="faq-ans-${i}" class="max-h-0 overflow-hidden transition-all duration-300">
+        <p class="px-4 pb-4 text-gray-600 text-sm leading-relaxed">${item.a}</p>
+      </div>
+    </div>`).join('');
+
+  // Related
+  document.getElementById('related-service-name').textContent = svc.name;
+  document.getElementById('related-subs').innerHTML = Object.entries(svc.subs).filter(([k])=>k!==subKey).map(([k,s])=>`
+    <div onclick="openSubPage('${serviceKey}','${k}')" class="sub-card bg-white rounded-large p-4 shadow-custom border border-gray-100 cursor-pointer text-center hover:shadow-custom-hover">
+      <div class="text-2xl mb-2">${s.icon}</div>
+      <h4 class="font-heading font-bold text-gray-900 text-xs mb-1">${s.name}</h4>
+      <p class="text-blue-700 font-bold text-xs">From $${s.prices.basic}/mo</p>
+    </div>`).join('');
+
+  showPage('page-sub');
+  updateSubCartBadge();
+}
+
+function toggleFaq(i) {
+  const ans = document.getElementById(`faq-ans-${i}`);
+  const arrow = document.getElementById(`faq-arrow-${i}`);
+  const isOpen = ans.style.maxHeight && ans.style.maxHeight !== '0px';
+  ans.style.maxHeight = isOpen ? '0px' : ans.scrollHeight + 'px';
+  arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+function scrollToSubPricing() {
+  document.getElementById('sub-pricing-section').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CART
+// ═══════════════════════════════════════════════════════════════════════════
+function addToCart(name, coverage, price, serviceKey, icon) {
+  const existing = cart.find(i=>i.name===name);
+  if(existing) {
+    existing.coverage = coverage;
+    existing.price = price;
+    showToast(`✅ ${name} updated to ${coverage} plan!`, 'success');
+  } else {
+    cart.push({id:Date.now(), name, coverage, price, icon: icon||'🛡️', serviceKey});
+    showToast(`🛒 Added to cart!`, 'success');
+  }
+  updateCartUI();
+  animateCartBtn();
+}
+
+function removeFromCart(id) {
+  const item = cart.find(i=>i.id===id);
+  if(!item) return;
+  cart = cart.filter(i=>i.id!==id);
+  updateCartUI();
+  renderCart();
+  if(item.serviceKey) updateCartInd(item.serviceKey, cart.some(i=>i.serviceKey===item.serviceKey));
+  showToast(`🗑️ Removed from cart.`, 'warning');
+}
+
+function updateCovInCart(id, cov) {
+  const item = cart.find(i=>i.id===id);
+  if(!item) return;
+  const svcKey = item.serviceKey;
+  const subName = item.name.split(' - ')[1];
+  if(svcKey && subName) {
+    const svc = SERVICES[svcKey];
+    if(svc) {
+      const sub = Object.values(svc.subs).find(s=>s.name===subName);
+      if(sub && sub.prices[cov]) { item.coverage=cov; item.price=sub.prices[cov]; updateCartUI(); renderCartTotals(); showToast(`✅ Coverage updated to ${cov}.`,'success'); }
+    }
+  }
+}
+
+function openCart() {
+  document.getElementById('cart-drawer').classList.add('open');
+  document.getElementById('cart-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderCart();
+}
+function closeCart() {
+  document.getElementById('cart-drawer').classList.remove('open');
+  document.getElementById('cart-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function updateCartUI() {
+  const count = cart.length;
+  const badge = document.getElementById('cart-badge');
+  const heroBadge = document.getElementById('hero-badge');
+  const subBadge = document.getElementById('sub-cart-badge');
+  [badge, heroBadge, subBadge].forEach(b=>{ if(!b) return; if(count>0){b.textContent=count;b.classList.remove('hidden');b.classList.add('flex');}else{b.classList.add('hidden');b.classList.remove('flex');} });
+  document.getElementById('cart-count-label').textContent = `${count} item${count!==1?'s':''} selected`;
+  Object.keys(SERVICES).forEach(k=>{ updateCartInd(k, cart.some(i=>i.serviceKey===k)); });
+}
+
+function updateSubCartBadge() {
+  const count = cart.length;
+  const b = document.getElementById('sub-cart-badge');
+  if(!b) return;
+  if(count>0){b.textContent=count;b.classList.remove('hidden');b.classList.add('flex');}else{b.classList.add('hidden');b.classList.remove('flex');}
+}
+
+function updateCartInd(key, inCart) {
+  const el = document.getElementById(`cart-ind-${key}`);
+  if(el) { if(inCart) el.classList.remove('hidden'); else el.classList.add('hidden'); }
+}
+
+function animateCartBtn() {
+  const btn = document.getElementById('cart-nav-btn');
+  btn.classList.add('cart-bounce');
+  setTimeout(()=>btn.classList.remove('cart-bounce'), 500);
+}
+
+function renderCart() {
+  const list = document.getElementById('cart-items-list');
+  const empty = document.getElementById('cart-empty');
+  const summary = document.getElementById('cart-summary');
+  const promoSec = document.getElementById('cart-promo-section');
+  if(cart.length===0) { list.classList.add('hidden'); empty.classList.remove('hidden'); summary.classList.add('hidden'); promoSec.classList.add('hidden'); return; }
+  empty.classList.add('hidden'); list.classList.remove('hidden'); summary.classList.remove('hidden'); promoSec.classList.remove('hidden');
+  list.innerHTML = cart.map(item=>`
+    <div id="ci-${item.id}" class="bg-white border border-gray-100 rounded-large p-3.5 shadow-sm">
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 bg-blue-50 rounded-small flex items-center justify-center text-lg flex-shrink-0">${item.icon}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between gap-2">
+            <p class="font-bold text-gray-900 text-xs leading-tight">${item.name}</p>
+            <button onclick="removeFromCart(${item.id})" class="text-gray-400 hover:text-red-500 transition-colors text-lg leading-none flex-shrink-0">×</button>
+          </div>
+          <div class="flex gap-1 mt-2">
+            ${['basic','standard','premium'].map(c=>`<button onclick="updateCovInCart(${item.id},'${c}')" class="px-2 py-1 rounded-small text-xs font-bold transition-all ${item.coverage===c?(c==='standard'?'bg-orange-500 text-white':'bg-blue-600 text-white'):'bg-gray-100 text-gray-600 hover:bg-gray-200'}">${c.charAt(0).toUpperCase()+c.slice(1)}</button>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between mt-2.5 pt-2.5 border-t border-gray-100">
+        <span class="text-xs text-gray-400">Monthly</span>
+        <span class="font-bold text-blue-700 text-sm">$${item.price}/mo</span>
+      </div>
+    </div>`).join('');
+  renderCartTotals();
+}
+
+function renderCartTotals() {
+  const sub = cart.reduce((s,i)=>s+i.price,0);
+  let disc=0, discLabel='';
+  if(appliedPromo) {
+    const p=PROMO_CODES[appliedPromo];
+    if(p.type==='percent'){disc=Math.round(sub*p.value/100);discLabel=`${p.label} (-${p.value}%)`;}
+    else if(p.type==='fixed'){disc=Math.min(p.value,sub);discLabel=p.label;}
+    else if(p.type==='months'){disc=Math.round(sub*p.value/12);discLabel=`${p.label} (-$${disc})`;}
+  }
+  const total=Math.max(0,sub-disc);
+  document.getElementById('cart-subtotal').textContent=`$${sub}/mo`;
+  document.getElementById('cart-total').textContent=`$${total}/mo`;
+  const dr=document.getElementById('discount-row');
+  if(disc>0){dr.classList.remove('hidden');document.getElementById('discount-label').textContent=discLabel;document.getElementById('cart-discount').textContent=`-$${disc}`;}
+  else dr.classList.add('hidden');
+}
+
+function clearCart() { cart=[]; appliedPromo=null; updateCartUI(); renderCart(); document.getElementById('promo-applied-bar').classList.add('hidden'); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROMO
+// ═══════════════════════════════════════════════════════════════════════════
+function applyPromo() {
+  const code=document.getElementById('promo-input').value.trim().toUpperCase();
+  const err=document.getElementById('promo-err');
+  if(!PROMO_CODES[code]){err.classList.remove('hidden');return;}
+  const p=PROMO_CODES[code];
+  if(cart.length<(p.min||1)){err.classList.remove('hidden');err.textContent=`Requires ${p.min}+ items.`;return;}
+  err.classList.add('hidden');
+  appliedPromo=code;
+  document.getElementById('promo-applied-bar').classList.remove('hidden');
+  document.getElementById('promo-applied-text').textContent=`${p.label} applied!`;
+  document.getElementById('promo-input').value='';
+  renderCartTotals();
+  showToast(`🎉 Promo "${code}" applied!`,'success');
+}
+function removePromo() { appliedPromo=null; document.getElementById('promo-applied-bar').classList.add('hidden'); renderCartTotals(); showToast('Promo removed.','warning'); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CHECKOUT
+// ═══════════════════════════════════════════════════════════════════════════
+function openCheckout() {
+  if(cart.length===0){showToast('Cart is empty!','warning');return;}
+  closeCart();
+  buildCoItems();
+  payGo(1);
+  setTimeout(()=>openModal('checkout-modal'),300);
+}
+
+function buildCoItems() {
+  const sub=cart.reduce((s,i)=>s+i.price,0);
+  let disc=0,discLabel='';
+  if(appliedPromo){const p=PROMO_CODES[appliedPromo];if(p.type==='percent'){disc=Math.round(sub*p.value/100);discLabel=`${p.label} (-${p.value}%)`;}else if(p.type==='fixed'){disc=Math.min(p.value,sub);discLabel=p.label;}else if(p.type==='months'){disc=Math.round(sub*p.value/12);discLabel=`${p.label} (-$${disc})`;}}
+  const total=Math.max(0,sub-disc);
+  document.getElementById('co-items').innerHTML=cart.map(i=>`<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-large border border-gray-100"><div class="w-9 h-9 bg-blue-50 rounded-small flex items-center justify-center text-lg">${i.icon}</div><div class="flex-1"><p class="font-bold text-gray-900 text-xs">${i.name}</p><p class="text-gray-400 text-xs capitalize">${i.coverage}</p></div><span class="font-bold text-blue-700 text-sm">$${i.price}/mo</span></div>`).join('');
+  document.getElementById('co-sub').textContent=`$${sub}/mo`;
+  document.getElementById('co-total').textContent=`$${total}/mo`;
+  const cdr=document.getElementById('co-disc-row');
+  if(disc>0){cdr.classList.remove('hidden');document.getElementById('co-disc-lbl').textContent=discLabel;document.getElementById('co-disc').textContent=`-$${disc}`;}
+  else cdr.classList.add('hidden');
+}
+
+function payGo(step) {
+  const labels=['','Review Order','Personal Info','Payment','Confirm'];
+  for(let i=1;i<=4;i++){
+    document.getElementById(`ps-${i}`).classList.remove('active');
+    const ind=document.getElementById(`pi-${i}`);
+    ind.classList.remove('active','done');
+    if(i<step){ind.classList.add('done');ind.textContent='✓';}
+    else if(i===step){ind.classList.add('active');ind.textContent=i;}
+    else ind.textContent=i;
+  }
+  document.getElementById(`ps-${step}`).classList.add('active');
+  document.getElementById('pay-step-lbl').textContent=labels[step];
+}
+
+function payStep2Next() {
+  let valid=true;
+  [{id:'pf-fname',e:'pf-fname-e',fn:v=>v.length>=2},{id:'pf-lname',e:'pf-lname-e',fn:v=>v.length>=2},{id:'pf-email',e:'pf-email-e',fn:v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)},{id:'pf-phone',e:'pf-phone-e',fn:v=>v.replace(/\D/g,'').length>=10},{id:'pf-dob',e:'pf-dob-e',fn:v=>v.length>0},{id:'pf-addr',e:'pf-addr-e',fn:v=>v.length>=5}].forEach(f=>{
+    const el=document.getElementById(f.id),err=document.getElementById(f.e);
+    if(!f.fn(el.value.trim())){err.classList.remove('hidden');el.classList.add('input-error');el.classList.remove('input-success');valid=false;}
+    else{err.classList.add('hidden');el.classList.remove('input-error');el.classList.add('input-success');}
+  });
+  if(!valid){showToast('Please fill all required fields.','error');return;}
+  payGo(3);
+}
+
+function payStep3Next() {
+  if(activePayTab==='card'){
+    let valid=true;
+    const cn=document.getElementById('pc-name').value.trim();
+    const num=document.getElementById('pc-num').value.replace(/\s/g,'');
+    const exp=document.getElementById('pc-exp').value.trim();
+    const cvv=document.getElementById('pc-cvv').value.trim();
+    if(cn.length<2){document.getElementById('pc-name-e').classList.remove('hidden');document.getElementById('pc-name').classList.add('input-error');valid=false;}else{document.getElementById('pc-name-e').classList.add('hidden');document.getElementById('pc-name').classList.remove('input-error');document.getElementById('pc-name').classList.add('input-success');}
+    if(!/^\d{16}$/.test(num)){document.getElementById('pc-num-e').classList.remove('hidden');document.getElementById('pc-num').classList.add('input-error');valid=false;}else{document.getElementById('pc-num-e').classList.add('hidden');document.getElementById('pc-num').classList.remove('input-error');document.getElementById('pc-num').classList.add('input-success');}
+    if(!/^\d{2}\/\d{2}$/.test(exp)){document.getElementById('pc-exp-e').classList.remove('hidden');document.getElementById('pc-exp').classList.add('input-error');valid=false;}else{document.getElementById('pc-exp-e').classList.add('hidden');document.getElementById('pc-exp').classList.remove('input-error');document.getElementById('pc-exp').classList.add('input-success');}
+    if(!/^\d{3,4}$/.test(cvv)){document.getElementById('pc-cvv-e').classList.remove('hidden');document.getElementById('pc-cvv').classList.add('input-error');valid=false;}else{document.getElementById('pc-cvv-e').classList.add('hidden');document.getElementById('pc-cvv').classList.remove('input-error');document.getElementById('pc-cvv').classList.add('input-success');}
+    if(!valid){showToast('Check payment details.','error');return;}
+  }
+  buildConfirm();
+  payGo(4);
+}
+
+function buildConfirm() {
+  const fn=document.getElementById('pf-fname').value.trim();
+  const ln=document.getElementById('pf-lname').value.trim();
+  const em=document.getElementById('pf-email').value.trim();
+  const sub=cart.reduce((s,i)=>s+i.price,0);
+  let disc=0;
+  if(appliedPromo){const p=PROMO_CODES[appliedPromo];if(p.type==='percent')disc=Math.round(sub*p.value/100);else if(p.type==='fixed')disc=Math.min(p.value,sub);else if(p.type==='months')disc=Math.round(sub*p.value/12);}
+  const total=Math.max(0,sub-disc);
+  let pm='';
+  if(activePayTab==='card'){const n=document.getElementById('pc-num').value.replace(/\s/g,'');pm=`💳 Card ending in ${n.slice(-4)}`;}
+  else if(activePayTab==='paypal')pm='🅿️ PayPal';
+  else pm='🏦 Bank Transfer';
+  document.getElementById('confirm-sum').innerHTML=`<div class="bg-gray-50 rounded-large p-4 space-y-2 text-sm"><div class="flex justify-between"><span class="text-gray-500">Customer</span><span class="font-bold text-gray-900">${fn} ${ln}</span></div><div class="flex justify-between"><span class="text-gray-500">Email</span><span class="text-gray-700">${em}</span></div><div class="flex justify-between"><span class="text-gray-500">Payment</span><span class="text-gray-700">${pm}</span></div><div class="border-t border-gray-200 pt-2">${cart.map(i=>`<div class="flex justify-between mb-1"><span class="text-gray-600 text-xs">${i.icon} ${i.name}</span><span class="font-bold text-blue-700 text-xs">$${i.price}/mo</span></div>`).join('')}</div>${disc>0?`<div class="flex justify-between text-green-600 font-medium text-xs"><span>Discount</span><span>-$${disc}</span></div>`:''}<div class="border-t border-gray-200 pt-2 flex justify-between font-bold"><span>Total/mo</span><span class="text-blue-700">$${total}/mo</span></div></div>`;
+}
+
+function placeOrder() {
+  const btn=document.getElementById('place-btn');
+  btn.classList.add('btn-loading');btn.textContent='Processing...';btn.disabled=true;
+  setTimeout(()=>{
+    btn.classList.remove('btn-loading');btn.textContent='✅ Place Order';btn.disabled=false;
+    closeModal('checkout-modal');
+    const oid='SG-'+Date.now().toString().slice(-8).toUpperCase();
+    const em=document.getElementById('pf-email').value.trim();
+    const sub=cart.reduce((s,i)=>s+i.price,0);
+    let disc=0;
+    if(appliedPromo){const p=PROMO_CODES[appliedPromo];if(p.type==='percent')disc=Math.round(sub*p.value/100);else if(p.type==='fixed')disc=Math.min(p.value,sub);else if(p.type==='months')disc=Math.round(sub*p.value/12);}
+    const total=Math.max(0,sub-disc);
+    document.getElementById('suc-order').textContent=`Order: ${oid} | Confirmation sent to ${em}`;
+    document.getElementById('suc-items').innerHTML=cart.map(i=>`<div class="flex items-center gap-2"><span>${i.icon}</span><span class="flex-1 font-medium text-gray-800">${i.name}</span><span class="text-green-600 font-bold capitalize text-xs">${i.coverage}</span><span class="font-bold text-blue-700 text-xs">$${i.price}/mo</span></div>`).join('')+`<div class="border-t border-gray-200 pt-2 mt-2 flex justify-between font-bold text-gray-900 text-sm"><span>Total</span><span class="text-blue-700">$${total}/mo</span></div>`;
+    setTimeout(()=>openModal('success-modal'),300);
+  },2500);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PAYMENT HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+function fmtCard(inp){let v=inp.value.replace(/\D/g,'').slice(0,16);inp.value=v.replace(/(.{4})/g,'$1 ').trim();}
+function fmtExp(inp){let v=inp.value.replace(/\D/g,'').slice(0,4);if(v.length>=2)v=v.slice(0,2)+'/'+v.slice(2);inp.value=v;}
+function toggleCVV(){const i=document.getElementById('pc-cvv');i.type=i.type==='password'?'text':'password';}
+function switchTab(tab){
+  activePayTab=tab;
+  ['card','paypal','bank'].forEach(t=>{document.getElementById(`pt-${t}`).classList.add('hidden');document.getElementById(`tab-${t}`).classList.remove('bg-white','text-blue-700','shadow-sm');document.getElementById(`tab-${t}`).classList.add('text-gray-500');});
+  document.getElementById(`pt-${tab}`).classList.remove('hidden');
+  document.getElementById(`tab-${tab}`).classList.add('bg-white','text-blue-700','shadow-sm');
+  document.getElementById(`tab-${tab}`).classList.remove('text-gray-500');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HERO QUICK ADD
+// ═══════════════════════════════════════════════════════════════════════════
+const HERO_SUBS = {
+  home:[{key:'single',name:'Single Family',prices:{basic:55,standard:85,premium:130}},{key:'condo',name:'Condo',prices:{basic:45,standard:70,premium:105}},{key:'townhouse',name:'Townhouse',prices:{basic:50,standard:80,premium:120}},{key:'mobile',name:'Mobile Home',prices:{basic:35,standard:55,premium:85}},{key:'vacation',name:'Vacation Home',prices:{basic:65,standard:100,premium:155}}],
+  auto:[{key:'personal',name:'Personal Car',prices:{basic:29,standard:49,premium:79}},{key:'suv',name:'SUV / Truck',prices:{basic:39,standard:65,premium:99}},{key:'motorcycle',name:'Motorcycle',prices:{basic:22,standard:38,premium:62}},{key:'classic',name:'Classic Car',prices:{basic:45,standard:72,premium:115}},{key:'commercial',name:'Commercial',prices:{basic:89,standard:149,premium:229}}],
+  life:[{key:'term',name:'Term Life',prices:{basic:19,standard:39,premium:69}},{key:'whole',name:'Whole Life',prices:{basic:49,standard:89,premium:149}},{key:'universal',name:'Universal Life',prices:{basic:39,standard:69,premium:119}},{key:'final',name:'Final Expense',prices:{basic:12,standard:22,premium:38}},{key:'group',name:'Group Life',prices:{basic:15,standard:28,premium:48}}],
+  business:[{key:'small',name:'Small Business',prices:{basic:89,standard:149,premium:229}},{key:'llc',name:'LLC / Corp',prices:{basic:149,standard:249,premium:399}},{key:'retail',name:'Retail Store',prices:{basic:99,standard:169,premium:259}},{key:'restaurant',name:'Restaurant',prices:{basic:119,standard:199,premium:309}},{key:'contractor',name:'Contractor',prices:{basic:59,standard:99,premium:159}}],
+  renters:[{key:'apartment',name:'Apartment',prices:{basic:12,standard:22,premium:35}},{key:'studio',name:'Studio',prices:{basic:8,standard:15,premium:25}},{key:'shared',name:'Shared Housing',prices:{basic:9,standard:18,premium:29}},{key:'furnished',name:'Furnished Rental',prices:{basic:18,standard:32,premium:52}},{key:'student',name:'Student Housing',prices:{basic:10,standard:18,premium:28}}],
+  travel:[{key:'domestic',name:'Domestic Trip',prices:{basic:9,standard:18,premium:29}},{key:'international',name:'International',prices:{basic:19,standard:35,premium:59}},{key:'cruise',name:'Cruise',prices:{basic:25,standard:45,premium:72}},{key:'adventure',name:'Adventure Sports',prices:{basic:35,standard:59,premium:95}},{key:'annual',name:'Annual Multi-Trip',prices:{basic:79,standard:129,premium:199}}]
+};
+
+function updateHeroSubs() {
+  const type=document.getElementById('hero-type').value;
+  const subs=HERO_SUBS[type]||[];
+  document.getElementById('hero-sub').innerHTML=subs.map(s=>`<option class="text-gray-900" value="${s.key}">${s.name}</option>`).join('');
+  updateHeroPrices();
+}
+function updateHeroPrices() {
+  const type=document.getElementById('hero-type').value;
+  const subKey=document.getElementById('hero-sub').value;
+  const subs=HERO_SUBS[type]||[];
+  const sub=subs.find(s=>s.key===subKey)||subs[0];
+  if(!sub) return;
+  document.getElementById('hc-basic-p').textContent=`$${sub.prices.basic}`;
+  document.getElementById('hc-std-p').textContent=`$${sub.prices.standard}`;
+  document.getElementById('hc-prem-p').textContent=`$${sub.prices.premium}`;
+}
+function selectHeroCov(c) {
+  heroCov=c;
+  ['basic','standard','premium'].forEach(cv=>{
+    const btn=document.getElementById(`hc-${cv==='standard'?'std':cv}`);
+    if(cv===c){btn.classList.add('border-orange-400','bg-orange-500/20');btn.classList.remove('border-white/30');}
+    else{btn.classList.remove('border-orange-400','bg-orange-500/20');btn.classList.add('border-white/30');}
+  });
+}
+function heroAdd() {
+  const type=document.getElementById('hero-type').value;
+  const subKey=document.getElementById('hero-sub').value;
+  const subs=HERO_SUBS[type]||[];
+  const sub=subs.find(s=>s.key===subKey)||subs[0];
+  if(!sub) return;
+  const svc=SERVICES[type];
+  const subData=svc.subs[subKey];
+  const price=sub.prices[heroCov];
+  const name=`${svc.name} - ${sub.name}`;
+  const btn=document.getElementById('hero-add-btn');
+  btn.classList.add('btn-loading');btn.textContent='Adding...';
+  setTimeout(()=>{btn.classList.remove('btn-loading');btn.textContent='🛒 Add to Cart';addToCart(name,heroCov,price,type,subData?subData.icon:'🛡️');setTimeout(()=>openCart(),400);},800);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// OFFERS
+// ═══════════════════════════════════════════════════════════════════════════
+function claimOffer(title,desc,code) {
+  document.getElementById('om-title').textContent=title;
+  document.getElementById('om-desc').textContent=desc;
+  document.getElementById('om-code').textContent=code;
+  openModal('offer-modal');
+}
+function copyCode() {
+  const code=document.getElementById('om-code').textContent;
+  const btn=document.getElementById('copy-btn');
+  navigator.clipboard.writeText(code).then(()=>{btn.textContent='✓ Copied!';showToast(`Code "${code}" copied! 🎉`,'success');setTimeout(()=>btn.textContent='Copy',2000);}).catch(()=>showToast(`Your code: ${code}`,'info'));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BUNDLE
+// ═══════════════════════════════════════════════════════════════════════════
+function bundleAdd() {
+  addToCart('Home Insurance - Single Family','standard',85,'home','🏡');
+  addToCart('Auto Insurance - Personal Car','standard',49,'auto','🚙');
+  showToast('🎁 Home + Auto bundle added! Use code BUNDLE20 for 20% off.','success');
+  setTimeout(()=>openCart(),500);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONTACT
+// ═══════════════════════════════════════════════════════════════════════════
+function submitContact(e) {
+  e.preventDefault();
+  let valid=true;
+  [{id:'cf-name',e:'cf-name-e',fn:v=>v.length>=2},{id:'cf-email',e:'cf-email-e',fn:v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)},{id:'cf-sub',e:'cf-sub-e',fn:v=>v.length>0},{id:'cf-msg',e:'cf-msg-e',fn:v=>v.length>=10}].forEach(f=>{
+    const el=document.getElementById(f.id),err=document.getElementById(f.e);
+    if(!f.fn(el.value.trim())){err.classList.remove('hidden');el.classList.add('input-error');valid=false;}
+    else{err.classList.add('hidden');el.classList.remove('input-error');el.classList.add('input-success');}
+  });
+  if(!valid) return;
+  const btn=document.getElementById('cf-btn');
+  btn.classList.add('btn-loading');btn.textContent='Sending...';btn.disabled=true;
+  setTimeout(()=>{btn.classList.remove('btn-loading');btn.textContent='Send Message ✉️';btn.disabled=false;closeModal('contact-modal');showToast("✅ Message sent! We'll respond within 24 hours.",'success');document.getElementById('contact-form').reset();},1800);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NEWSLETTER
+// ═══════════════════════════════════════════════════════════════════════════
+function subNewsletter(e) {
+  e.preventDefault();
+  const em=document.getElementById('nl-email').value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){showToast('Please enter a valid email.','error');return;}
+  showToast('🎉 Subscribed successfully!','success');
+  document.getElementById('nl-email').value='';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MOBILE MENU
+// ═══════════════════════════════════════════════════════════════════════════
+function toggleMobileMenu() {
+  document.getElementById('mob-menu').classList.toggle('open');
+  document.getElementById('menu-ic').classList.toggle('hidden');
+  document.getElementById('close-ic').classList.toggle('hidden');
+}
+function closeMobMenu() {
+  document.getElementById('mob-menu').classList.remove('open');
+  document.getElementById('menu-ic').classList.remove('hidden');
+  document.getElementById('close-ic').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SCROLL
+// ═══════════════════════════════════════════════════════════════════════════
+function scrollToSection(id) {
+  const el=document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REVEAL & COUNTERS
+// ═══════════════════════════════════════════════════════════════════════════
+const revObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');e.target.querySelectorAll('.progress-bar').forEach(b=>setTimeout(()=>b.classList.add('animated'),400));}});
+},{threshold:0.1});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-right').forEach(el=>revObs.observe(el));
+
+function animCounter(id,target,pre='',suf='',dur=2000){
+  const el=document.getElementById(id);if(!el)return;
+  let s=0;const step=target/(dur/16);
+  const t=setInterval(()=>{s=Math.min(s+step,target);el.textContent=pre+(target>=1000?Math.floor(s/1000)+'K+':Math.floor(s)+suf);if(s>=target)clearInterval(t);},16);
+}
+const statsObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){animCounter('stat-1',50000,'','+');animCounter('stat-2',2000,'$','B+');animCounter('stat-3',98,'','%');animCounter('stat-4',29,'','yr');statsObs.disconnect();}});
+},{threshold:0.3});
+const ss=document.getElementById('stat-1');if(ss)statsObs.observe(ss.closest('.grid'));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RIPPLE
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('button');if(!btn)return;
+  const r=document.createElement('span');const rect=btn.getBoundingClientRect();const size=Math.max(rect.width,rect.height);
+  r.style.cssText=`position:absolute;border-radius:50%;width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px;background:rgba(255,255,255,0.25);transform:scale(0);animation:ripple 0.6s linear;pointer-events:none;`;
+  btn.style.position='relative';btn.style.overflow='hidden';btn.appendChild(r);setTimeout(()=>r.remove(),600);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){['offer-modal','contact-modal','checkout-modal','success-modal'].forEach(id=>{const el=document.getElementById(id);if(el&&el.classList.contains('open'))closeModal(id);});closeCart();}
+});
+
+// INIT
+updateHeroSubs();
+</script>
+
+
+    <script src="script.js"></script>
+</body>
+</html>
